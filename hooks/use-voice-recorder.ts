@@ -117,7 +117,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
           const blob = new Blob(chunksRef.current, { type: actualMimeType });
           // Check if blob has meaningful data (minimum ~0.5s of audio)
           if (blob.size < 5000) {
-            setError("Recording too short. Please hold the button for at least 1 second.");
+            setError("Recording too short. Please record for at least 1 second.");
             setIsRecording(false);
             cleanup();
             return;

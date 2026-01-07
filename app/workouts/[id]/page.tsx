@@ -188,7 +188,7 @@ export default function WorkoutDetailPage() {
                     onSetSaved={fetchSession}
                   />
                   <p className="text-sm text-muted-foreground mt-4 text-center">
-                    Hold the button and describe your set
+                    Tap the button and describe your set
                   </p>
                 </CardContent>
               </Card>
