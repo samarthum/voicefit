@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model AppUser {
+  id          String   @id @default(cuid())
+  clerkUserId String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Daily goals
+  calorieGoal Int @default(2000)
+  stepGoal    Int @default(10000)
+
+  // Relations
+  dailyMetrics    DailyMetric[]
+  meals           MealLog[]
+  workoutSessions WorkoutSession[]
+}
+
+model DailyMetric {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String   // YYYY-MM-DD format, normalized to user timezone
+  steps     Int?
+  weightKg  Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model MealLog {
+  id            String   @id @default(cuid())
+  userId        String
+  eatenAt       DateTime
+  mealType      String   // breakfast, lunch, dinner, snack
+  description   String
+  transcriptRaw String?  // Original transcript user approved
+  calories      Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, eatenAt])
+}
+
+model WorkoutSession {
+  id        String    @id @default(cuid())
+  userId    String
+  startedAt DateTime
+  endedAt   DateTime?
+  title     String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user AppUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sets WorkoutSet[]
+
+  @@index([userId])
+  @@index([userId, startedAt])
+}
+
+model WorkoutSet {
+  id            String   @id @default(cuid())
+  sessionId     String
+  performedAt   DateTime
+  exerciseName  String
+  reps          Int
+  weightKg      Float?
+  notes         String?
+  transcriptRaw String?  // Original transcript user approved
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  session WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([sessionId, performedAt])
+}

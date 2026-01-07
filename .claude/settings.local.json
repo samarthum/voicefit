@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun add:*)",
+      "Bash(bunx prisma init:*)",
+      "Bash(bunx shadcn@latest add:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(cat:*)",
+      "Bash(BUN_CONFIG_REGISTRY=https://registry.npmjs.org/ bunx:*)",
+      "Bash(bun run build:*)",
+      "Bash(find:*)"
+    ]
+  }
+}
