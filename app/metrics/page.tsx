@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,31 @@ interface DailyMetric {
 }
 
 export default function MetricsPage() {
+  return (
+    <Suspense fallback={<MetricsPageSkeleton />}>
+      <MetricsPageContent />
+    </Suspense>
+  );
+}
+
+function MetricsPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex h-14 items-center justify-between px-4">
+          <h1 className="text-lg font-semibold">Daily Metrics</h1>
+        </div>
+      </header>
+      <main className="container max-w-lg mx-auto px-4 py-6 space-y-6">
+        <Skeleton className="h-[200px] w-full" />
+        <Skeleton className="h-[200px] w-full" />
+      </main>
+      <BottomNav />
+    </div>
+  );
+}
+
+function MetricsPageContent() {
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get("tab") || "steps";
 
