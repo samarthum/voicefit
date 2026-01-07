@@ -56,6 +56,8 @@ function MetricsPageContent() {
 
   const [steps, setSteps] = useState("");
   const [weight, setWeight] = useState("");
+  const [selectedStepsDate, setSelectedStepsDate] = useState(getTodayDateString());
+  const [selectedWeightDate, setSelectedWeightDate] = useState(getTodayDateString());
 
   const today = getTodayDateString();
 
@@ -90,6 +92,42 @@ function MetricsPageContent() {
     fetchMetrics();
   }, [fetchMetrics]);
 
+  // Fetch data for selected steps date
+  useEffect(() => {
+    const fetchStepsData = async () => {
+      try {
+        const response = await fetch(`/api/daily-metrics/${selectedStepsDate}`);
+        const result = await response.json();
+        if (result.success && result.data) {
+          setSteps(result.data.steps?.toString() || "");
+        } else {
+          setSteps("");
+        }
+      } catch (error) {
+        console.error("Error fetching steps data:", error);
+      }
+    };
+    fetchStepsData();
+  }, [selectedStepsDate]);
+
+  // Fetch data for selected weight date
+  useEffect(() => {
+    const fetchWeightData = async () => {
+      try {
+        const response = await fetch(`/api/daily-metrics/${selectedWeightDate}`);
+        const result = await response.json();
+        if (result.success && result.data) {
+          setWeight(result.data.weightKg?.toString() || "");
+        } else {
+          setWeight("");
+        }
+      } catch (error) {
+        console.error("Error fetching weight data:", error);
+      }
+    };
+    fetchWeightData();
+  }, [selectedWeightDate]);
+
   const handleSaveSteps = async () => {
     const stepsValue = parseInt(steps);
     if (isNaN(stepsValue) || stepsValue < 0) {
@@ -102,14 +140,22 @@ function MetricsPageContent() {
       const response = await fetch("/api/daily-metrics", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: today, steps: stepsValue }),
+        body: JSON.stringify({ date: selectedStepsDate, steps: stepsValue }),
       });
 
       const result = await response.json();
 
       if (result.success) {
         toast.success("Steps saved!");
-        setTodayMetric((prev) => ({ ...prev!, steps: stepsValue }));
+        if (selectedStepsDate === today) {
+          setTodayMetric((prev) => ({ ...prev!, steps: stepsValue }));
+        }
+        // Refresh recent metrics to show the update
+        const historyRes = await fetch("/api/daily-metrics?limit=7");
+        const historyResult = await historyRes.json();
+        if (historyResult.success) {
+          setRecentMetrics(historyResult.data);
+        }
       } else {
         toast.error(result.error || "Failed to save steps");
       }
@@ -133,14 +179,22 @@ function MetricsPageContent() {
       const response = await fetch("/api/daily-metrics", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: today, weightKg: weightValue }),
+        body: JSON.stringify({ date: selectedWeightDate, weightKg: weightValue }),
       });
 
       const result = await response.json();
 
       if (result.success) {
         toast.success("Weight saved!");
-        setTodayMetric((prev) => ({ ...prev!, weightKg: weightValue }));
+        if (selectedWeightDate === today) {
+          setTodayMetric((prev) => ({ ...prev!, weightKg: weightValue }));
+        }
+        // Refresh recent metrics to show the update
+        const historyRes = await fetch("/api/daily-metrics?limit=7");
+        const historyResult = await historyRes.json();
+        if (historyResult.success) {
+          setRecentMetrics(historyResult.data);
+        }
       } else {
         toast.error(result.error || "Failed to save weight");
       }
@@ -185,9 +239,20 @@ function MetricsPageContent() {
             <TabsContent value="steps" className="mt-4 space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Today's Steps</CardTitle>
+                  <CardTitle className="text-base">
+                    Steps for {selectedStepsDate === today ? "Today" : selectedStepsDate}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="steps-date">Date</Label>
+                    <Input
+                      id="steps-date"
+                      type="date"
+                      value={selectedStepsDate}
+                      onChange={(e) => setSelectedStepsDate(e.target.value)}
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="steps">Steps</Label>
                     <Input
@@ -252,9 +317,20 @@ function MetricsPageContent() {
             <TabsContent value="weight" className="mt-4 space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Today's Weight</CardTitle>
+                  <CardTitle className="text-base">
+                    Weight for {selectedWeightDate === today ? "Today" : selectedWeightDate}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="weight-date">Date</Label>
+                    <Input
+                      id="weight-date"
+                      type="date"
+                      value={selectedWeightDate}
+                      onChange={(e) => setSelectedWeightDate(e.target.value)}
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="weight">Weight (kg)</Label>
                     <Input
