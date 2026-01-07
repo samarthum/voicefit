@@ -9,7 +9,7 @@ const SYSTEM_PROMPT = `You are a nutrition expert assistant. Your task is to ana
 Given a meal description (which may be a transcript from voice input), you must:
 1. Clean up and summarize the meal description
 2. Estimate the total calories for the meal
-3. Determine the meal type (breakfast, lunch, dinner, or snack) based on context or typical meal patterns
+3. Determine the meal type (breakfast, lunch, dinner, or snack) based on context, typical meal patterns, and timestamp if provided
 4. Provide a confidence score (0-1) for your estimate
 5. List any assumptions you made
 
@@ -46,13 +46,31 @@ export async function POST(request: NextRequest) {
       return errorResponse(parseResult.error.issues[0].message);
     }
 
-    const { transcript, mealType } = parseResult.data;
+    const { transcript, mealType, eatenAt } = parseResult.data;
 
     // Build user message with optional context
     let userMessage = transcript;
+    const contextParts: string[] = [];
+
+    // Use provided timestamp or current time
+    const timestamp = eatenAt ? new Date(eatenAt) : new Date();
+    const timeStr = timestamp.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    const dateStr = timestamp.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric'
+    });
+    contextParts.push(`Time: ${dateStr} at ${timeStr}`);
+
     if (mealType) {
-      userMessage = `[Meal type: ${mealType}] ${transcript}`;
+      contextParts.push(`Meal type: ${mealType}`);
     }
+
+    userMessage = `[${contextParts.join(', ')}] ${transcript}`;
 
     // Call Gemini 3 Flash for interpretation
     const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
