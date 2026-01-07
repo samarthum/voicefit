@@ -8,6 +8,7 @@ export interface UseVoiceRecorderReturn {
   audioBlob: Blob | null;
   duration: number;
   error: string | null;
+  mimeType: string | null;
   startRecording: () => Promise<void>;
   stopRecording: () => void;
   reset: () => void;
@@ -19,6 +20,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [mimeType, setMimeType] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -66,15 +68,34 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
       streamRef.current = stream;
 
       // Determine the best supported MIME type
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : MediaRecorder.isTypeSupported("audio/mp4")
-        ? "audio/mp4"
-        : "audio/wav";
+      // Safari on iOS primarily supports audio/mp4, so we prioritize it
+      let selectedMimeType = "";
 
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      // Try Safari-friendly formats first (important for iOS)
+      if (MediaRecorder.isTypeSupported("audio/mp4")) {
+        selectedMimeType = "audio/mp4";
+      } else if (MediaRecorder.isTypeSupported("audio/mp4;codecs=mp4a.40.2")) {
+        selectedMimeType = "audio/mp4;codecs=mp4a.40.2";
+      } else if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+        selectedMimeType = "audio/webm;codecs=opus";
+      } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+        selectedMimeType = "audio/webm";
+      } else if (MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")) {
+        selectedMimeType = "audio/ogg;codecs=opus";
+      } else {
+        // Fallback - let browser choose
+        selectedMimeType = "";
+      }
+
+      console.log("Selected MIME type:", selectedMimeType);
+
+      const mediaRecorder = selectedMimeType
+        ? new MediaRecorder(stream, { mimeType: selectedMimeType })
+        : new MediaRecorder(stream);
+
+      const actualMimeType = selectedMimeType || "audio/webm"; // Default for tracking
+      setMimeType(actualMimeType);
+
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -93,7 +114,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
             cleanup();
             return;
           }
-          const blob = new Blob(chunksRef.current, { type: mimeType });
+          const blob = new Blob(chunksRef.current, { type: actualMimeType });
           // Check if blob has meaningful data (minimum ~0.5s of audio)
           if (blob.size < 5000) {
             setError("Recording too short. Please hold the button for at least 1 second.");
@@ -166,6 +187,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
     setError(null);
     setIsRecording(false);
     setIsPreparing(false);
+    setMimeType(null);
     cleanup();
   }, [cleanup]);
 
@@ -175,6 +197,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
     audioBlob,
     duration,
     error,
+    mimeType,
     startRecording,
     stopRecording,
     reset,
