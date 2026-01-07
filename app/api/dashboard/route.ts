@@ -111,14 +111,14 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Calculate today's totals
-    const todayCalories = todayMeals.reduce<number>(
-      (sum, meal) => sum + meal.calories,
-      0
-    );
-    const todaySetCount = todaySessions.reduce<number>(
-      (sum, session) => sum + session._count.sets,
-      0
-    );
+    let todayCalories = 0;
+    for (const meal of todayMeals) {
+      todayCalories += meal.calories;
+    }
+    let todaySetCount = 0;
+    for (const session of todaySessions) {
+      todaySetCount += session._count.sets;
+    }
 
     // Build weekly trends
     const weeklyTrends = last7Days.map((date) => {
@@ -130,9 +130,14 @@ export async function GET(request: NextRequest) {
         (s) => s.startedAt.toISOString().split("T")[0] === date
       );
 
+      let dayCalories = 0;
+      for (const m of dayMeals) {
+        dayCalories += m.calories;
+      }
+
       return {
         date,
-        calories: dayMeals.reduce((sum, m) => sum + m.calories, 0),
+        calories: dayCalories,
         steps: dayMetric?.steps ?? null,
         weight: dayMetric?.weightKg ?? null,
         workouts: daySessions.length,
