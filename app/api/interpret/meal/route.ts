@@ -52,28 +52,25 @@ export async function POST(request: NextRequest) {
     let userMessage = transcript;
     const contextParts: string[] = [];
 
-    if (eatenAt) {
-      const timestamp = new Date(eatenAt);
-      const timeStr = timestamp.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-      const dateStr = timestamp.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric'
-      });
-      contextParts.push(`Time: ${dateStr} at ${timeStr}`);
-    }
+    // Use provided timestamp or current time
+    const timestamp = eatenAt ? new Date(eatenAt) : new Date();
+    const timeStr = timestamp.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    const dateStr = timestamp.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric'
+    });
+    contextParts.push(`Time: ${dateStr} at ${timeStr}`);
 
     if (mealType) {
       contextParts.push(`Meal type: ${mealType}`);
     }
 
-    if (contextParts.length > 0) {
-      userMessage = `[${contextParts.join(', ')}] ${transcript}`;
-    }
+    userMessage = `[${contextParts.join(', ')}] ${transcript}`;
 
     // Call Gemini 3 Flash for interpretation
     const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });

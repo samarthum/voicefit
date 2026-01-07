@@ -92,10 +92,7 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
       const response = await fetch("/api/interpret/meal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          transcript: editedTranscript,
-          eatenAt: new Date().toISOString(),
-        }),
+        body: JSON.stringify({ transcript: editedTranscript }),
       });
 
       const data = await response.json();
