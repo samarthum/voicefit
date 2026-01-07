@@ -26,6 +26,78 @@ export async function GET(request: NextRequest) {
     const last7Days = getLastNDays(7, timezone);
 
     // Fetch all data in parallel
+    const todayMealsPromise = prisma.mealLog.findMany({
+      where: {
+        userId: user.id,
+        eatenAt: { gte: todayStart, lte: todayEnd },
+      },
+    });
+
+    const todayMetricPromise = prisma.dailyMetric.findUnique({
+      where: {
+        userId_date: { userId: user.id, date: today },
+      },
+    });
+
+    const todaySessionsPromise = prisma.workoutSession.findMany({
+      where: {
+        userId: user.id,
+        startedAt: { gte: todayStart, lte: todayEnd },
+      },
+      include: {
+        _count: { select: { sets: true } },
+      },
+    });
+
+    const weeklyMealsPromise = prisma.mealLog.findMany({
+      where: {
+        userId: user.id,
+        eatenAt: {
+          gte: new Date(last7Days[0] + "T00:00:00.000Z"),
+          lte: todayEnd,
+        },
+      },
+      select: { eatenAt: true, calories: true },
+    });
+
+    const weeklyMetricsPromise = prisma.dailyMetric.findMany({
+      where: {
+        userId: user.id,
+        date: { in: last7Days },
+      },
+    });
+
+    const weeklySessionsPromise = prisma.workoutSession.findMany({
+      where: {
+        userId: user.id,
+        startedAt: {
+          gte: new Date(last7Days[0] + "T00:00:00.000Z"),
+          lte: todayEnd,
+        },
+      },
+      select: { startedAt: true },
+    });
+
+    const recentMealsPromise = prisma.mealLog.findMany({
+      where: { userId: user.id },
+      orderBy: { eatenAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        description: true,
+        calories: true,
+        mealType: true,
+        eatenAt: true,
+      },
+    });
+
+    const recentSetsPromise = prisma.workoutSet.findMany({
+      where: { session: { userId: user.id } },
+      orderBy: { performedAt: "desc" },
+      take: 50,
+      select: { exerciseName: true },
+    });
+
     const [
       todayMeals,
       todayMetric,
@@ -36,78 +108,14 @@ export async function GET(request: NextRequest) {
       recentMeals,
       recentSets,
     ] = await Promise.all([
-      // Today's meals
-      prisma.mealLog.findMany({
-        where: {
-          userId: user.id,
-          eatenAt: { gte: todayStart, lte: todayEnd },
-        },
-      }),
-      // Today's metrics
-      prisma.dailyMetric.findUnique({
-        where: {
-          userId_date: { userId: user.id, date: today },
-        },
-      }),
-      // Today's workout sessions
-      prisma.workoutSession.findMany({
-        where: {
-          userId: user.id,
-          startedAt: { gte: todayStart, lte: todayEnd },
-        },
-        include: {
-          _count: { select: { sets: true } },
-        },
-      }),
-      // Weekly meals for trends
-      prisma.mealLog.findMany({
-        where: {
-          userId: user.id,
-          eatenAt: {
-            gte: new Date(last7Days[0] + "T00:00:00.000Z"),
-            lte: todayEnd,
-          },
-        },
-        select: { eatenAt: true, calories: true },
-      }),
-      // Weekly metrics for trends
-      prisma.dailyMetric.findMany({
-        where: {
-          userId: user.id,
-          date: { in: last7Days },
-        },
-      }),
-      // Weekly sessions for trends
-      prisma.workoutSession.findMany({
-        where: {
-          userId: user.id,
-          startedAt: {
-            gte: new Date(last7Days[0] + "T00:00:00.000Z"),
-            lte: todayEnd,
-          },
-        },
-        select: { startedAt: true },
-      }),
-      // Recent meals for quick-add
-      prisma.mealLog.findMany({
-        where: { userId: user.id },
-        orderBy: { eatenAt: "desc" },
-        take: 5,
-        select: {
-          id: true,
-          description: true,
-          calories: true,
-          mealType: true,
-          eatenAt: true,
-        },
-      }),
-      // Recent exercises for quick-add
-      prisma.workoutSet.findMany({
-        where: { session: { userId: user.id } },
-        orderBy: { performedAt: "desc" },
-        take: 50,
-        select: { exerciseName: true },
-      }),
+      todayMealsPromise,
+      todayMetricPromise,
+      todaySessionsPromise,
+      weeklyMealsPromise,
+      weeklyMetricsPromise,
+      weeklySessionsPromise,
+      recentMealsPromise,
+      recentSetsPromise,
     ]);
 
     // Calculate today's totals
