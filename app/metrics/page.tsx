@@ -239,9 +239,7 @@ function MetricsPageContent() {
             <TabsContent value="steps" className="mt-4 space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">
-                    Steps for {selectedStepsDate === today ? "Today" : selectedStepsDate}
-                  </CardTitle>
+                  <CardTitle className="text-base">Steps</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -317,9 +315,7 @@ function MetricsPageContent() {
             <TabsContent value="weight" className="mt-4 space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">
-                    Weight for {selectedWeightDate === today ? "Today" : selectedWeightDate}
-                  </CardTitle>
+                  <CardTitle className="text-base">Weight</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
