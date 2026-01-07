@@ -14,6 +14,7 @@ type WeeklyMeal = { eatenAt: Date; calories: number };
 type WeeklyMetric = { date: string; steps: number | null; weightKg: number | null };
 type WeeklySession = { startedAt: Date };
 type RecentSet = { exerciseName: string };
+type RecentMeal = { id: string; description: string; calories: number; mealType: string; eatenAt: Date };
 
 // GET /api/dashboard - Get dashboard data
 export async function GET(request: NextRequest) {
@@ -185,7 +186,7 @@ export async function GET(request: NextRequest) {
         workoutSets: todaySetCount,
       },
       weeklyTrends,
-      recentMeals: recentMeals.map((meal) => ({
+      recentMeals: recentMeals.map((meal: RecentMeal) => ({
         id: meal.id,
         description: meal.description,
         calories: meal.calories,
