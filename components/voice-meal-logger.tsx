@@ -19,6 +19,7 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
     audioBlob,
     duration,
     error: recorderError,
+    mimeType,
     startRecording,
     stopRecording,
     reset: resetRecorder,
@@ -30,6 +31,17 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
   const [currentTranscript, setCurrentTranscript] = useState("");
   const processingRef = useRef(false);
 
+  // Helper function to get file extension from MIME type
+  const getFileExtension = (mimeType: string | null): string => {
+    if (!mimeType) return "webm";
+    if (mimeType.includes("mp4")) return "mp4";
+    if (mimeType.includes("webm")) return "webm";
+    if (mimeType.includes("ogg")) return "ogg";
+    if (mimeType.includes("wav")) return "wav";
+    if (mimeType.includes("mpeg")) return "mp3";
+    return "webm"; // default fallback
+  };
+
   // Handle recording completion
   const handleRecordingComplete = useCallback(async (blob: Blob) => {
     if (processingRef.current) return;
@@ -38,7 +50,8 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
 
     try {
       const formData = new FormData();
-      formData.append("audio", blob, "recording.webm");
+      const extension = getFileExtension(mimeType);
+      formData.append("audio", blob, `recording.${extension}`);
 
       const response = await fetch("/api/transcribe", {
         method: "POST",
@@ -61,7 +74,7 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
     } finally {
       processingRef.current = false;
     }
-  }, [resetRecorder]);
+  }, [mimeType, resetRecorder]);
 
   // Effect to handle audio blob changes
   useEffect(() => {
