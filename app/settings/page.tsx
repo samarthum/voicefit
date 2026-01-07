@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BottomNav } from "@/components/bottom-nav";
-import { Loader2, Target } from "lucide-react";
+import { Loader2, Target, User } from "lucide-react";
 import { toast, Toaster } from "sonner";
 
 interface UserSettings {
@@ -90,34 +90,42 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       <Toaster />
+
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-14 items-center justify-between px-4">
-          <h1 className="text-lg font-semibold">Settings</h1>
+      <header className="sticky top-0 z-40 bg-gradient-to-b from-background via-background to-background/80 backdrop-blur-sm border-b border-border/50">
+        <div className="flex h-16 items-center justify-between px-4 max-w-lg mx-auto">
+          <h1 className="text-lg font-display text-foreground">Settings</h1>
           <UserButton afterSignOutUrl="/" />
         </div>
       </header>
 
       <main className="container max-w-lg mx-auto px-4 py-6 space-y-6">
         {isLoading ? (
-          <Skeleton className="h-[300px] w-full" />
+          <div className="space-y-6">
+            <Skeleton className="h-[280px] w-full rounded-2xl" />
+            <Skeleton className="h-[140px] w-full rounded-2xl" />
+          </div>
         ) : (
-          <>
+          <div className="space-y-6 animate-fade-up">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-3 font-display text-xl">
+                  <div className="p-2 rounded-xl bg-primary/10">
+                    <Target className="h-5 w-5 text-primary" />
+                  </div>
                   Daily Goals
                 </CardTitle>
                 <CardDescription>
                   Set your daily calorie and step targets
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="calorieGoal">Daily Calorie Goal (kcal)</Label>
+                  <Label htmlFor="calorieGoal" className="text-sm font-medium">
+                    Daily Calorie Goal (kcal)
+                  </Label>
                   <Input
                     id="calorieGoal"
                     type="number"
@@ -130,7 +138,9 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="stepGoal">Daily Step Goal</Label>
+                  <Label htmlFor="stepGoal" className="text-sm font-medium">
+                    Daily Step Goal
+                  </Label>
                   <Input
                     id="stepGoal"
                     type="number"
@@ -161,13 +171,18 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Account</CardTitle>
+                <CardTitle className="flex items-center gap-3 font-display text-xl">
+                  <div className="p-2 rounded-xl bg-accent">
+                    <User className="h-5 w-5 text-accent-foreground" />
+                  </div>
+                  Account
+                </CardTitle>
                 <CardDescription>
                   Manage your account settings
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/40">
                   <UserButton
                     afterSignOutUrl="/"
                     appearance={{
@@ -184,7 +199,7 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
-          </>
+          </div>
         )}
       </main>
 

@@ -17,28 +17,46 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center justify-around px-4">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-          const Icon = item.icon;
+    <nav className="fixed bottom-4 left-4 right-4 z-50">
+      <div
+        className={cn(
+          "mx-auto max-w-lg",
+          "bg-gradient-to-b from-card to-card/95",
+          "backdrop-blur-xl",
+          "rounded-2xl border border-border/50",
+          "shadow-xl shadow-foreground/10",
+          "px-2"
+        )}
+      >
+        <div className="flex h-16 items-center justify-around">
+          {navItems.map((item) => {
+            const isActive =
+              pathname === item.href || pathname.startsWith(item.href + "/");
+            const Icon = item.icon;
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 px-3 py-2 transition-colors",
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="text-xs">{item.label}</span>
-            </Link>
-          );
-        })}
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl",
+                  "transition-all duration-300",
+                  isActive
+                    ? "text-primary bg-primary/10 scale-105"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                )}
+              >
+                <Icon
+                  className={cn(
+                    "h-5 w-5 transition-transform duration-300",
+                    isActive && "scale-110"
+                  )}
+                />
+                <span className="text-xs font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

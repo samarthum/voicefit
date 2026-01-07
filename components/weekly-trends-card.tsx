@@ -22,7 +22,6 @@ interface WeeklyTrendsCardProps {
 }
 
 export function WeeklyTrendsCard({ data }: WeeklyTrendsCardProps) {
-  // Format date for display (show day name)
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", { weekday: "short" });
@@ -33,18 +32,29 @@ export function WeeklyTrendsCard({ data }: WeeklyTrendsCardProps) {
     displayDate: formatDate(d.date),
   }));
 
+  const tooltipStyle = {
+    backgroundColor: "var(--color-card)",
+    border: "1px solid var(--color-border)",
+    borderRadius: "12px",
+    boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)",
+    padding: "8px 12px",
+  };
+
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Weekly Trends</CardTitle>
+    <Card className="relative overflow-hidden">
+      {/* Decorative background */}
+      <div className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full bg-gradient-to-tl from-secondary/10 to-transparent blur-3xl pointer-events-none" />
+
+      <CardHeader className="pb-2 relative">
+        <CardTitle className="text-xl font-display">Weekly Trends</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
         <Tabs defaultValue="calories" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="calories">Calories</TabsTrigger>
+            <TabsTrigger value="calories">Cal</TabsTrigger>
             <TabsTrigger value="steps">Steps</TabsTrigger>
             <TabsTrigger value="weight">Weight</TabsTrigger>
-            <TabsTrigger value="workouts">Workouts</TabsTrigger>
+            <TabsTrigger value="workouts">Gym</TabsTrigger>
           </TabsList>
 
           <TabsContent value="calories" className="mt-4">
@@ -53,30 +63,27 @@ export function WeeklyTrendsCard({ data }: WeeklyTrendsCardProps) {
                 <LineChart data={chartData}>
                   <XAxis
                     dataKey="displayDate"
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
                     width={40}
                   />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--background))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
+                    contentStyle={tooltipStyle}
                     formatter={(value) => [`${value} kcal`, "Calories"]}
                   />
                   <Line
                     type="monotone"
                     dataKey="calories"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 0 }}
+                    stroke="var(--color-primary)"
+                    strokeWidth={3}
+                    dot={{ fill: "var(--color-primary)", strokeWidth: 0, r: 4 }}
+                    activeDot={{ r: 6, fill: "var(--color-primary)" }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -89,33 +96,30 @@ export function WeeklyTrendsCard({ data }: WeeklyTrendsCardProps) {
                 <LineChart data={chartData}>
                   <XAxis
                     dataKey="displayDate"
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
                     width={50}
                   />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--background))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
+                    contentStyle={tooltipStyle}
                     formatter={(value) => [
-                      value ? Number(value).toLocaleString() : "—",
+                      value ? Number(value).toLocaleString() : "---",
                       "Steps",
                     ]}
                   />
                   <Line
                     type="monotone"
                     dataKey="steps"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 0 }}
+                    stroke="var(--color-secondary-foreground)"
+                    strokeWidth={3}
+                    dot={{ fill: "var(--color-secondary-foreground)", strokeWidth: 0, r: 4 }}
+                    activeDot={{ r: 6, fill: "var(--color-secondary-foreground)" }}
                     connectNulls
                   />
                 </LineChart>
@@ -129,34 +133,31 @@ export function WeeklyTrendsCard({ data }: WeeklyTrendsCardProps) {
                 <LineChart data={chartData}>
                   <XAxis
                     dataKey="displayDate"
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
                     width={40}
                     domain={["dataMin - 1", "dataMax + 1"]}
                   />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--background))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
+                    contentStyle={tooltipStyle}
                     formatter={(value) => [
-                      value ? `${value} kg` : "—",
+                      value ? `${value} kg` : "---",
                       "Weight",
                     ]}
                   />
                   <Line
                     type="monotone"
                     dataKey="weight"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 0 }}
+                    stroke="var(--color-accent-foreground)"
+                    strokeWidth={3}
+                    dot={{ fill: "var(--color-accent-foreground)", strokeWidth: 0, r: 4 }}
+                    activeDot={{ r: 6, fill: "var(--color-accent-foreground)" }}
                     connectNulls
                   />
                 </LineChart>
@@ -170,23 +171,19 @@ export function WeeklyTrendsCard({ data }: WeeklyTrendsCardProps) {
                 <LineChart data={chartData}>
                   <XAxis
                     dataKey="displayDate"
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
                     width={30}
                     allowDecimals={false}
                   />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--background))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
+                    contentStyle={tooltipStyle}
                     formatter={(value) => [
                       `${value} session${value !== 1 ? "s" : ""}`,
                       "Workouts",
@@ -195,9 +192,10 @@ export function WeeklyTrendsCard({ data }: WeeklyTrendsCardProps) {
                   <Line
                     type="monotone"
                     dataKey="workouts"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 0 }}
+                    stroke="var(--color-primary)"
+                    strokeWidth={3}
+                    dot={{ fill: "var(--color-primary)", strokeWidth: 0, r: 4 }}
+                    activeDot={{ r: 6, fill: "var(--color-primary)" }}
                   />
                 </LineChart>
               </ResponsiveContainer>

@@ -8,7 +8,7 @@ import { MealCard } from "@/components/meal-card";
 import { VoiceMealLogger } from "@/components/voice-meal-logger";
 import { BottomNav } from "@/components/bottom-nav";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
-import { Plus } from "lucide-react";
+import { Plus, Utensils } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -87,52 +87,60 @@ export default function MealsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       <Toaster />
+
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-14 items-center justify-between px-4">
-          <h1 className="text-lg font-semibold">Meal Logs</h1>
+      <header className="sticky top-0 z-40 bg-gradient-to-b from-background via-background to-background/80 backdrop-blur-sm border-b border-border/50">
+        <div className="flex h-16 items-center justify-between px-4 max-w-lg mx-auto">
+          <h1 className="text-lg font-display text-foreground">Meal Logs</h1>
           <UserButton afterSignOutUrl="/" />
         </div>
       </header>
 
       <main className="container max-w-lg mx-auto px-4 py-6 space-y-4">
         {/* Add Meal Button */}
-        <Sheet open={mealSheetOpen} onOpenChange={setMealSheetOpen}>
-          <SheetTrigger asChild>
-            <Button className="w-full" size="lg">
-              <Plus className="h-4 w-4 mr-2" />
-              Log Meal
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="h-[80vh]">
-            <SheetHeader>
-              <SheetTitle>Log Meal</SheetTitle>
-            </SheetHeader>
-            <div className="flex flex-col items-center justify-center py-8">
-              <VoiceMealLogger onMealSaved={handleMealSaved} />
-              <p className="text-sm text-muted-foreground mt-4 text-center">
-                Hold the button and describe your meal
-              </p>
-            </div>
-          </SheetContent>
-        </Sheet>
+        <div className="animate-fade-up">
+          <Sheet open={mealSheetOpen} onOpenChange={setMealSheetOpen}>
+            <SheetTrigger asChild>
+              <Button className="w-full" size="lg">
+                <Plus className="h-4 w-4 mr-2" />
+                Log Meal
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl">
+              <SheetHeader>
+                <SheetTitle className="font-display text-xl">Log Meal</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col items-center justify-center py-8">
+                <VoiceMealLogger onMealSaved={handleMealSaved} />
+                <p className="text-sm text-muted-foreground mt-4 text-center">
+                  Hold the button and describe your meal
+                </p>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
 
         {/* Meals List */}
         {isLoading ? (
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full" />
+              <Skeleton key={i} className="h-28 w-full rounded-2xl" />
             ))}
           </div>
         ) : meals.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <p>No meals logged yet.</p>
-            <p className="text-sm">Tap the button above to log your first meal.</p>
+          <div className="text-center py-16">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+              <Utensils className="w-8 h-8 text-primary" />
+            </div>
+            <p className="text-foreground font-medium">No meals logged yet</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Tap the button above to log your first meal
+            </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 stagger-children">
             {meals.map((meal) => (
               <MealCard
                 key={meal.id}

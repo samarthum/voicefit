@@ -21,6 +21,13 @@ import {
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
@@ -56,42 +63,53 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       <Toaster />
+
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-14 items-center justify-between px-4">
-          <h1 className="text-lg font-semibold">Health Tracker</h1>
+      <header className="sticky top-0 z-40 bg-gradient-to-b from-background via-background to-background/80 backdrop-blur-sm border-b border-border/50">
+        <div className="flex h-16 items-center justify-between px-4 max-w-lg mx-auto">
+          <div>
+            <h1 className="text-lg font-display text-foreground">{getGreeting()}</h1>
+            <p className="text-xs text-muted-foreground">Let&apos;s track your wellness</p>
+          </div>
           <UserButton afterSignOutUrl="/" />
         </div>
       </header>
 
       <main className="container max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Today Summary */}
-        {isLoading ? (
-          <Skeleton className="h-[200px] w-full" />
-        ) : data ? (
-          <TodaySummaryCard
-            calories={data.today.calories}
-            steps={data.today.steps}
-            weight={data.today.weight}
-            workoutSessions={data.today.workoutSessions}
-            workoutSets={data.today.workoutSets}
-          />
-        ) : null}
+        <div className="animate-fade-up">
+          {isLoading ? (
+            <Skeleton className="h-[280px] w-full rounded-2xl" />
+          ) : data ? (
+            <TodaySummaryCard
+              calories={data.today.calories}
+              steps={data.today.steps}
+              weight={data.today.weight}
+              workoutSessions={data.today.workoutSessions}
+              workoutSets={data.today.workoutSets}
+            />
+          ) : null}
+        </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 stagger-children">
           <Sheet open={mealSheetOpen} onOpenChange={setMealSheetOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" className="h-auto py-4 flex flex-col gap-2">
-                <Utensils className="h-5 w-5" />
-                <span>Log Meal</span>
+              <Button
+                variant="outline"
+                className="h-auto py-5 flex flex-col gap-3 bg-card hover:bg-card border-border/60 hover:border-primary/30 shadow-sm hover:shadow-md transition-all duration-300 group"
+              >
+                <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <Utensils className="h-5 w-5 text-primary" />
+                </div>
+                <span className="font-medium">Log Meal</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[80vh]">
+            <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl">
               <SheetHeader>
-                <SheetTitle>Log Meal</SheetTitle>
+                <SheetTitle className="font-display text-xl">Log Meal</SheetTitle>
               </SheetHeader>
               <div className="flex flex-col items-center justify-center py-8">
                 <VoiceMealLogger onMealSaved={handleMealSaved} />
@@ -104,38 +122,46 @@ export default function DashboardPage() {
 
           <Button
             variant="outline"
-            className="h-auto py-4 flex flex-col gap-2"
+            className="h-auto py-5 flex flex-col gap-3 bg-card hover:bg-card border-border/60 hover:border-secondary-foreground/30 shadow-sm hover:shadow-md transition-all duration-300 group"
             onClick={() => router.push("/workouts/new")}
           >
-            <Dumbbell className="h-5 w-5" />
-            <span>Start Workout</span>
+            <div className="p-3 rounded-xl bg-secondary group-hover:bg-secondary/80 transition-colors">
+              <Dumbbell className="h-5 w-5 text-secondary-foreground" />
+            </div>
+            <span className="font-medium">Start Workout</span>
           </Button>
 
           <Button
             variant="outline"
-            className="h-auto py-4 flex flex-col gap-2"
+            className="h-auto py-5 flex flex-col gap-3 bg-card hover:bg-card border-border/60 hover:border-accent-foreground/30 shadow-sm hover:shadow-md transition-all duration-300 group"
             onClick={() => router.push("/metrics?tab=steps")}
           >
-            <Footprints className="h-5 w-5" />
-            <span>Log Steps</span>
+            <div className="p-3 rounded-xl bg-accent group-hover:bg-accent/80 transition-colors">
+              <Footprints className="h-5 w-5 text-accent-foreground" />
+            </div>
+            <span className="font-medium">Log Steps</span>
           </Button>
 
           <Button
             variant="outline"
-            className="h-auto py-4 flex flex-col gap-2"
+            className="h-auto py-5 flex flex-col gap-3 bg-card hover:bg-card border-border/60 hover:border-muted-foreground/30 shadow-sm hover:shadow-md transition-all duration-300 group"
             onClick={() => router.push("/metrics?tab=weight")}
           >
-            <Scale className="h-5 w-5" />
-            <span>Log Weight</span>
+            <div className="p-3 rounded-xl bg-muted group-hover:bg-muted/80 transition-colors">
+              <Scale className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <span className="font-medium">Log Weight</span>
           </Button>
         </div>
 
         {/* Weekly Trends */}
-        {isLoading ? (
-          <Skeleton className="h-[300px] w-full" />
-        ) : data ? (
-          <WeeklyTrendsCard data={data.weeklyTrends} />
-        ) : null}
+        <div className="animate-fade-up" style={{ animationDelay: "200ms" }}>
+          {isLoading ? (
+            <Skeleton className="h-[340px] w-full rounded-2xl" />
+          ) : data ? (
+            <WeeklyTrendsCard data={data.weeklyTrends} />
+          ) : null}
+        </div>
       </main>
 
       <BottomNav />
