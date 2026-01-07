@@ -7,6 +7,8 @@ import {
   unauthorizedResponse,
 } from "@/lib/api-helpers";
 
+type RecentMeal = { id: string; description: string; calories: number; mealType: string; eatenAt: Date };
+
 // GET /api/meals/recent - Get recent unique meals for quick-add
 export async function GET(request: NextRequest) {
   try {
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     // Deduplicate by description (case-insensitive)
     const seen = new Set<string>();
-    const uniqueMeals = recentMeals.filter((meal) => {
+    const uniqueMeals = recentMeals.filter((meal: RecentMeal) => {
       const key = meal.description.toLowerCase().trim();
       if (seen.has(key)) {
         return false;

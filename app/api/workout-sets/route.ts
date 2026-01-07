@@ -9,6 +9,8 @@ import {
 } from "@/lib/api-helpers";
 import { createWorkoutSetSchema } from "@/lib/validations";
 
+type RecentSet = { exerciseName: string };
+
 // POST /api/workout-sets - Create workout set
 export async function POST(request: NextRequest) {
   try {
@@ -88,7 +90,7 @@ export async function GET(request: NextRequest) {
     // Deduplicate exercise names (case-insensitive)
     const seen = new Set<string>();
     const uniqueExercises = recentSets
-      .filter((set) => {
+      .filter((set: RecentSet) => {
         const key = set.exerciseName.toLowerCase().trim();
         if (seen.has(key)) {
           return false;
@@ -96,7 +98,7 @@ export async function GET(request: NextRequest) {
         seen.add(key);
         return true;
       })
-      .map((set) => set.exerciseName)
+      .map((set: RecentSet) => set.exerciseName)
       .slice(0, limit);
 
     return successResponse(uniqueExercises);

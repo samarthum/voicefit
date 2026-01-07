@@ -8,6 +8,17 @@ import {
 } from "@/lib/api-helpers";
 import { createWorkoutSessionSchema, listQuerySchema } from "@/lib/validations";
 
+type SessionWithCount = {
+  id: string;
+  userId: string;
+  title: string;
+  startedAt: Date;
+  endedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  _count: { sets: number };
+};
+
 // GET /api/workout-sessions - List workout sessions
 export async function GET(request: NextRequest) {
   try {
@@ -65,7 +76,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform to include set count
-    const sessionsWithCount = sessions.map((session) => ({
+    const sessionsWithCount = sessions.map((session: SessionWithCount) => ({
       ...session,
       setCount: session._count.sets,
       _count: undefined,
