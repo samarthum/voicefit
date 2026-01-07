@@ -9,6 +9,12 @@ import {
 import { getLastNDays } from "@/lib/timezone";
 import type { DashboardData } from "@/lib/types";
 
+// Types for query results
+type WeeklyMeal = { eatenAt: Date; calories: number };
+type WeeklyMetric = { date: string; steps: number | null; weightKg: number | null };
+type WeeklySession = { startedAt: Date };
+type RecentSet = { exerciseName: string };
+
 // GET /api/dashboard - Get dashboard data
 export async function GET(request: NextRequest) {
   try {
@@ -129,13 +135,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Build weekly trends
-    const weeklyTrends = last7Days.map((date) => {
+    const weeklyTrends = last7Days.map((date: string) => {
       const dayMeals = weeklyMeals.filter(
-        (m) => m.eatenAt.toISOString().split("T")[0] === date
+        (m: WeeklyMeal) => m.eatenAt.toISOString().split("T")[0] === date
       );
-      const dayMetric = weeklyMetrics.find((m) => m.date === date);
+      const dayMetric = weeklyMetrics.find((m: WeeklyMetric) => m.date === date);
       const daySessions = weeklySessions.filter(
-        (s) => s.startedAt.toISOString().split("T")[0] === date
+        (s: WeeklySession) => s.startedAt.toISOString().split("T")[0] === date
       );
 
       let dayCalories = 0;
@@ -155,13 +161,13 @@ export async function GET(request: NextRequest) {
     // Deduplicate recent exercises
     const seenExercises = new Set<string>();
     const recentExercises = recentSets
-      .filter((set) => {
+      .filter((set: RecentSet) => {
         const key = set.exerciseName.toLowerCase().trim();
         if (seenExercises.has(key)) return false;
         seenExercises.add(key);
         return true;
       })
-      .map((set) => set.exerciseName)
+      .map((set: RecentSet) => set.exerciseName)
       .slice(0, 10);
 
     const dashboardData: DashboardData = {
