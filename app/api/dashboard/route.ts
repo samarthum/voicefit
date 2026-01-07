@@ -111,9 +111,12 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Calculate today's totals
-    const todayCalories = todayMeals.reduce((sum: number, meal) => sum + meal.calories, 0);
+    const todayCalories = todayMeals.reduce(
+      (sum, meal) => sum + meal.calories,
+      0
+    );
     const todaySetCount = todaySessions.reduce(
-      (sum: number, session) => sum + session._count.sets,
+      (sum, session) => sum + session._count.sets,
       0
     );
 
