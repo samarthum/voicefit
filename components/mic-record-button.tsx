@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import { Mic, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,37 +24,21 @@ export function MicRecordButton({
   disabled = false,
   className,
 }: MicRecordButtonProps) {
-  const isHoldingRef = useRef(false);
-
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (disabled || isPreparing) return;
-      e.preventDefault();
-      isHoldingRef.current = true;
+  const handleClick = useCallback(() => {
+    if (disabled || isPreparing) return;
+
+    if (isRecording) {
+      onStop();
+    } else {
       onStart();
-    },
-    [disabled, isPreparing, onStart]
-  );
-
-  const handlePointerUp = useCallback(() => {
-    if (isHoldingRef.current && isRecording) {
-      isHoldingRef.current = false;
-      onStop();
     }
-  }, [isRecording, onStop]);
-
-  const handlePointerLeave = useCallback(() => {
-    if (isHoldingRef.current && isRecording) {
-      isHoldingRef.current = false;
-      onStop();
-    }
-  }, [isRecording, onStop]);
+  }, [disabled, isPreparing, isRecording, onStart, onStop]);
 
   return (
     <div className={cn("flex flex-col items-center gap-4", className)}>
@@ -98,10 +82,7 @@ export function MicRecordButton({
               : "shadow-primary/30",
             !isRecording && !isPreparing && "animate-breathe"
           )}
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerLeave}
-          onPointerCancel={handlePointerUp}
+          onClick={handleClick}
           disabled={disabled || isPreparing}
         >
           {/* Icon with smooth transition */}
@@ -128,7 +109,7 @@ export function MicRecordButton({
           ? "Preparing..."
           : isRecording
           ? formatDuration(duration)
-          : "Hold to record"}
+          : "Tap to record"}
       </p>
     </div>
   );
