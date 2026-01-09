@@ -25,32 +25,36 @@ export async function GET(request: NextRequest) {
     const timezone = searchParams.get("timezone") || "UTC";
     const dateParam = searchParams.get("date"); // Optional date parameter (YYYY-MM-DD format)
 
-    // Get the target date string (use provided date or today)
-    const today = dateParam || new Date().toLocaleDateString("en-CA", { timeZone: timezone });
-    const todayStart = new Date(today + "T00:00:00.000Z");
-    const todayEnd = new Date(today + "T23:59:59.999Z");
+    // Get the actual current date (for weekly trends)
+    const actualToday = new Date().toLocaleDateString("en-CA", { timeZone: timezone });
+    const actualTodayEnd = new Date(actualToday + "T23:59:59.999Z");
 
-    // Get last 7 days for trends
+    // Get the selected date (for summary card, defaults to actual today)
+    const selectedDate = dateParam || actualToday;
+    const selectedDateStart = new Date(selectedDate + "T00:00:00.000Z");
+    const selectedDateEnd = new Date(selectedDate + "T23:59:59.999Z");
+
+    // Get last 7 days for trends (always based on actual current date)
     const last7Days = getLastNDays(7, timezone);
 
     // Fetch all data in parallel
     const todayMealsPromise = prisma.mealLog.findMany({
       where: {
         userId: user.id,
-        eatenAt: { gte: todayStart, lte: todayEnd },
+        eatenAt: { gte: selectedDateStart, lte: selectedDateEnd },
       },
     });
 
     const todayMetricPromise = prisma.dailyMetric.findUnique({
       where: {
-        userId_date: { userId: user.id, date: today },
+        userId_date: { userId: user.id, date: selectedDate },
       },
     });
 
     const todaySessionsPromise = prisma.workoutSession.findMany({
       where: {
         userId: user.id,
-        startedAt: { gte: todayStart, lte: todayEnd },
+        startedAt: { gte: selectedDateStart, lte: selectedDateEnd },
       },
       include: {
         _count: { select: { sets: true } },
@@ -62,7 +66,7 @@ export async function GET(request: NextRequest) {
         userId: user.id,
         eatenAt: {
           gte: new Date(last7Days[0] + "T00:00:00.000Z"),
-          lte: todayEnd,
+          lte: actualTodayEnd,
         },
       },
       select: { eatenAt: true, calories: true },
@@ -80,7 +84,7 @@ export async function GET(request: NextRequest) {
         userId: user.id,
         startedAt: {
           gte: new Date(last7Days[0] + "T00:00:00.000Z"),
-          lte: todayEnd,
+          lte: actualTodayEnd,
         },
       },
       select: { startedAt: true },
