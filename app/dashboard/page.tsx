@@ -28,16 +28,42 @@ function getGreeting(): string {
   return "Good evening";
 }
 
+function formatDateDisplay(dateString: string): string {
+  const date = new Date(dateString + "T12:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const targetDate = new Date(date);
+  targetDate.setHours(0, 0, 0, 0);
+
+  const diffTime = targetDate.getTime() - today.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === -1) return "Yesterday";
+  if (diffDays === 1) return "Tomorrow";
+
+  return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mealSheetOpen, setMealSheetOpen] = useState(false);
 
-  const fetchDashboard = useCallback(async () => {
+  // Initialize with today's date in YYYY-MM-DD format
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    return new Date().toLocaleDateString("en-CA");
+  });
+
+  const fetchDashboard = useCallback(async (date: string) => {
     try {
+      setIsLoading(true);
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const response = await fetch(`/api/dashboard?timezone=${encodeURIComponent(timezone)}`);
+      const response = await fetch(
+        `/api/dashboard?timezone=${encodeURIComponent(timezone)}&date=${date}`
+      );
       const result = await response.json();
 
       if (result.success) {
@@ -53,13 +79,25 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const navigateDate = (days: number) => {
+    const currentDate = new Date(selectedDate + "T12:00:00");
+    currentDate.setDate(currentDate.getDate() + days);
+    const newDate = currentDate.toLocaleDateString("en-CA");
+    setSelectedDate(newDate);
+  };
+
+  const goToPreviousDay = () => navigateDate(-1);
+  const goToNextDay = () => navigateDate(1);
+
+  const isToday = selectedDate === new Date().toLocaleDateString("en-CA");
+
   useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
+    fetchDashboard(selectedDate);
+  }, [selectedDate, fetchDashboard]);
 
   const handleMealSaved = () => {
     setMealSheetOpen(false);
-    fetchDashboard();
+    fetchDashboard(selectedDate);
   };
 
   return (
@@ -84,11 +122,15 @@ export default function DashboardPage() {
             <Skeleton className="h-[280px] w-full rounded-2xl" />
           ) : data ? (
             <TodaySummaryCard
+              dateLabel={formatDateDisplay(selectedDate)}
               calories={data.today.calories}
               steps={data.today.steps}
               weight={data.today.weight}
               workoutSessions={data.today.workoutSessions}
               workoutSets={data.today.workoutSets}
+              onPreviousDay={goToPreviousDay}
+              onNextDay={goToNextDay}
+              isToday={isToday}
             />
           ) : null}
         </div>
