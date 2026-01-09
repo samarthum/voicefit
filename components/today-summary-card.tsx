@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Utensils, Footprints, Scale, Dumbbell } from "lucide-react";
 
 interface TodaySummaryCardProps {
+  dateLabel?: string;
   calories: {
     consumed: number;
     goal: number;
@@ -19,6 +20,7 @@ interface TodaySummaryCardProps {
 }
 
 export function TodaySummaryCard({
+  dateLabel = "Today",
   calories,
   steps,
   weight,
@@ -37,7 +39,7 @@ export function TodaySummaryCard({
       <div className="absolute -bottom-16 -left-16 w-32 h-32 rounded-full bg-gradient-to-tr from-secondary/20 to-transparent blur-2xl pointer-events-none" />
 
       <CardHeader className="pb-2 relative">
-        <CardTitle className="text-xl font-display">Today</CardTitle>
+        <CardTitle className="text-xl font-display">{dateLabel}</CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-5 relative">

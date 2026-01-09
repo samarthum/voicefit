@@ -23,9 +23,10 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const timezone = searchParams.get("timezone") || "UTC";
+    const dateParam = searchParams.get("date"); // Optional date parameter (YYYY-MM-DD format)
 
-    // Get today's date string
-    const today = new Date().toLocaleDateString("en-CA", { timeZone: timezone });
+    // Get the target date string (use provided date or today)
+    const today = dateParam || new Date().toLocaleDateString("en-CA", { timeZone: timezone });
     const todayStart = new Date(today + "T00:00:00.000Z");
     const todayEnd = new Date(today + "T23:59:59.999Z");
 
