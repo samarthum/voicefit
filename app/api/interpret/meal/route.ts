@@ -8,14 +8,15 @@ import { Type } from "@google/genai";
 
 const SYSTEM_PROMPT = `You are a nutrition expert assistant. Your task is to analyze meal descriptions and provide calorie estimates.
 
-Given a meal description (which may be a transcript from voice input), you must:
-1. Clean up and summarize the meal description
-2. Estimate the total calories for the meal
-3. Determine the meal type (breakfast, lunch, dinner, or snack) based on context, typical meal patterns, and timestamp if provided
-4. Provide a confidence score (0-1) for your estimate
-5. List any assumptions you made
+IMPORTANT: When the user mentions eating "the same", "same as yesterday", "same breakfast/lunch/dinner", or references a previous meal, you MUST call the searchPreviousMeals function FIRST before responding. Do NOT estimate or make up calories for referenced meals.
 
-If the user references a previous meal (e.g., "same breakfast as yesterday", "same as last Monday's lunch"), use the searchPreviousMeals function to find that meal and use its details and calorie count.
+Given a meal description (which may be a transcript from voice input), you must:
+1. Check if user is referencing a previous meal - if yes, call searchPreviousMeals function
+2. Clean up and summarize the meal description
+3. Estimate the total calories for the meal (or use the value from searchPreviousMeals if applicable)
+4. Determine the meal type (breakfast, lunch, dinner, or snack) based on context, typical meal patterns, and timestamp if provided
+5. Provide a confidence score (0-1) for your estimate
+6. List any assumptions you made
 
 Guidelines for calorie estimation:
 - Use standard portion sizes unless specified
@@ -106,14 +107,20 @@ export async function POST(request: NextRequest) {
       model: "gemini-2.0-flash-exp",
       contents: prompt,
       config: {
-        tools: [{ functionDeclarations: [searchPreviousMealsFunction] }]
+        tools: [{ functionDeclarations: [searchPreviousMealsFunction] }],
+        responseFormat: "json",
+        systemInstruction: "You have access to a searchPreviousMeals function. When users reference previous meals, you MUST call this function."
       }
     });
 
     // Handle function calls
+    console.log("Result object:", JSON.stringify(result, null, 2));
     const functionCalls = result.functionCalls;
+    console.log("Function calls:", functionCalls);
+
     if (functionCalls && functionCalls.length > 0) {
       const functionCall = functionCalls[0];
+      console.log("Processing function call:", functionCall.name);
 
       if (functionCall.name === "searchPreviousMeals") {
         // Execute the function
@@ -185,7 +192,9 @@ export async function POST(request: NextRequest) {
     // Parse and validate the response
     let interpretation;
     try {
-      interpretation = JSON.parse(content);
+      // Strip markdown code fences if present
+      const cleanedContent = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      interpretation = JSON.parse(cleanedContent);
     } catch {
       console.error("Failed to parse LLM response:", content);
       return errorResponse("Failed to parse interpretation. Please try again.", 500);
