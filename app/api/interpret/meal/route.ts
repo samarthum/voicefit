@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { genAI } from "@/lib/gemini";
-import { errorResponse, successResponse, unauthorizedResponse } from "@/lib/api-helpers";
+import { errorResponse, successResponse, unauthorizedResponse, getCurrentUser } from "@/lib/api-helpers";
 import { interpretMealRequestSchema, mealInterpretationSchema } from "@/lib/validations";
+import { prisma } from "@/lib/db";
 
 const SYSTEM_PROMPT = `You are a nutrition expert assistant. Your task is to analyze meal descriptions and provide calorie estimates.
 
@@ -12,6 +13,8 @@ Given a meal description (which may be a transcript from voice input), you must:
 3. Determine the meal type (breakfast, lunch, dinner, or snack) based on context, typical meal patterns, and timestamp if provided
 4. Provide a confidence score (0-1) for your estimate
 5. List any assumptions you made
+
+If the user references a previous meal (e.g., "same breakfast as yesterday", "same as last Monday's lunch"), look at the meal history provided and use that meal's details and calorie count.
 
 Guidelines for calorie estimation:
 - Use standard portion sizes unless specified
@@ -32,11 +35,13 @@ Only output the JSON object, no other text.`;
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
+    // Check authentication and get user
     const { userId } = await auth();
     if (!userId) {
       return unauthorizedResponse();
     }
+
+    const user = await getCurrentUser();
 
     // Parse and validate request body
     const body = await request.json();
@@ -47,6 +52,29 @@ export async function POST(request: NextRequest) {
     }
 
     const { transcript, mealType, eatenAt } = parseResult.data;
+
+    // Fetch recent meals (past 7 days) for context
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const recentMeals = await prisma.mealLog.findMany({
+      where: {
+        userId: user.id,
+        eatenAt: {
+          gte: sevenDaysAgo
+        }
+      },
+      orderBy: {
+        eatenAt: 'desc'
+      },
+      take: 20, // Limit to 20 most recent meals to avoid token limits
+      select: {
+        eatenAt: true,
+        mealType: true,
+        description: true,
+        calories: true
+      }
+    });
 
     // Build user message with optional context
     let userMessage = transcript;
@@ -72,9 +100,29 @@ export async function POST(request: NextRequest) {
 
     userMessage = `[${contextParts.join(', ')}] ${transcript}`;
 
+    // Format meal history for context
+    let mealHistoryContext = '';
+    if (recentMeals.length > 0) {
+      mealHistoryContext = '\n\nRecent meal history (past 7 days):\n';
+      recentMeals.forEach((meal) => {
+        const mealDate = new Date(meal.eatenAt);
+        const mealDateStr = mealDate.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        });
+        const mealTimeStr = mealDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+        mealHistoryContext += `- ${mealDateStr} ${mealTimeStr} (${meal.mealType}): ${meal.description} - ${meal.calories} cal\n`;
+      });
+    }
+
     // Call Gemini 3 Flash for interpretation
     const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-    const prompt = `${SYSTEM_PROMPT}\n\nUser input: ${userMessage}`;
+    const prompt = `${SYSTEM_PROMPT}${mealHistoryContext}\n\nUser input: ${userMessage}`;
 
     const result = await model.generateContent(prompt);
     const content = result.response.text();
