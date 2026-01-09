@@ -2,7 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Utensils, Footprints, Scale, Dumbbell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Utensils, Footprints, Scale, Dumbbell, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TodaySummaryCardProps {
   dateLabel?: string;
@@ -17,6 +18,9 @@ interface TodaySummaryCardProps {
   weight: number | null;
   workoutSessions: number;
   workoutSets: number;
+  onPreviousDay?: () => void;
+  onNextDay?: () => void;
+  isToday?: boolean;
 }
 
 export function TodaySummaryCard({
@@ -26,6 +30,9 @@ export function TodaySummaryCard({
   weight,
   workoutSessions,
   workoutSets,
+  onPreviousDay,
+  onNextDay,
+  isToday = true,
 }: TodaySummaryCardProps) {
   const calorieProgress = Math.min((calories.consumed / calories.goal) * 100, 100);
   const stepProgress = steps.count
@@ -39,7 +46,30 @@ export function TodaySummaryCard({
       <div className="absolute -bottom-16 -left-16 w-32 h-32 rounded-full bg-gradient-to-tr from-secondary/20 to-transparent blur-2xl pointer-events-none" />
 
       <CardHeader className="pb-2 relative">
-        <CardTitle className="text-xl font-display">{dateLabel}</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl font-display">{dateLabel}</CardTitle>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onPreviousDay}
+              aria-label="Previous day"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onNextDay}
+              disabled={isToday}
+              aria-label="Next day"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-5 relative">

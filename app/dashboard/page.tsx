@@ -9,7 +9,7 @@ import { TodaySummaryCard } from "@/components/today-summary-card";
 import { WeeklyTrendsCard } from "@/components/weekly-trends-card";
 import { VoiceMealLogger } from "@/components/voice-meal-logger";
 import { BottomNav } from "@/components/bottom-nav";
-import { Utensils, Dumbbell, Footprints, Scale, ChevronLeft, ChevronRight } from "lucide-react";
+import { Utensils, Dumbbell, Footprints, Scale } from "lucide-react";
 import type { DashboardData } from "@/lib/types";
 import {
   Sheet,
@@ -88,7 +88,8 @@ export default function DashboardPage() {
 
   const goToPreviousDay = () => navigateDate(-1);
   const goToNextDay = () => navigateDate(1);
-  const goToToday = () => setSelectedDate(new Date().toLocaleDateString("en-CA"));
+
+  const isToday = selectedDate === new Date().toLocaleDateString("en-CA");
 
   useEffect(() => {
     fetchDashboard(selectedDate);
@@ -106,41 +107,11 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-gradient-to-b from-background via-background to-background/80 backdrop-blur-sm border-b border-border/50">
         <div className="flex h-16 items-center justify-between px-4 max-w-lg mx-auto">
-          <div className="flex-1">
+          <div>
             <h1 className="text-lg font-display text-foreground">{getGreeting()}</h1>
             <p className="text-xs text-muted-foreground">Let&apos;s track your wellness</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 mr-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={goToPreviousDay}
-                aria-label="Previous day"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-3 text-xs font-medium min-w-[100px]"
-                onClick={goToToday}
-              >
-                {formatDateDisplay(selectedDate)}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={goToNextDay}
-                aria-label="Next day"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-            <UserButton afterSignOutUrl="/" />
-          </div>
+          <UserButton afterSignOutUrl="/" />
         </div>
       </header>
 
@@ -157,6 +128,9 @@ export default function DashboardPage() {
               weight={data.today.weight}
               workoutSessions={data.today.workoutSessions}
               workoutSets={data.today.workoutSets}
+              onPreviousDay={goToPreviousDay}
+              onNextDay={goToNextDay}
+              isToday={isToday}
             />
           ) : null}
         </div>
