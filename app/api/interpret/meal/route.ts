@@ -4,6 +4,7 @@ import { genAI } from "@/lib/gemini";
 import { errorResponse, successResponse, unauthorizedResponse, getCurrentUser } from "@/lib/api-helpers";
 import { interpretMealRequestSchema, mealInterpretationSchema } from "@/lib/validations";
 import { prisma } from "@/lib/db";
+import { Type } from "@google/genai";
 
 const SYSTEM_PROMPT = `You are a nutrition expert assistant. Your task is to analyze meal descriptions and provide calorie estimates.
 
@@ -38,21 +39,21 @@ const searchPreviousMealsFunction = {
   name: "searchPreviousMeals",
   description: "Search for the user's previous meals to reference when they mention eating the same thing as before. Returns meals from the past 7 days.",
   parameters: {
-    type: "object",
+    type: Type.OBJECT,
     properties: {
       daysAgo: {
-        type: "integer",
+        type: Type.INTEGER,
         description: "Number of days in the past to search (1 for yesterday, 2 for day before, etc.). Defaults to 1."
       },
       mealType: {
-        type: "string",
+        type: Type.STRING,
         description: "Filter by meal type: breakfast, lunch, dinner, or snack. Optional.",
         enum: ["breakfast", "lunch", "dinner", "snack"]
       }
     },
     required: []
   }
-} as const;
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Format response
-        const functionResponse = meals.map(meal => ({
+        const functionResponse = meals.map((meal: { eatenAt: Date; mealType: string; description: string; calories: number }) => ({
           date: meal.eatenAt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
           time: meal.eatenAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
           mealType: meal.mealType,
