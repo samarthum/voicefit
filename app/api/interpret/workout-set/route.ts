@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const prompt = `${SYSTEM_PROMPT}\n\nUser input: ${transcript}`;
 
     const result = await genAI.models.generateContent({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-3-flash-preview",
       contents: prompt
     });
     const content = result.text;

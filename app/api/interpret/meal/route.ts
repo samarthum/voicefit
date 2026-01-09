@@ -8,15 +8,12 @@ import { Type } from "@google/genai";
 
 const SYSTEM_PROMPT = `You are a nutrition expert assistant. Your task is to analyze meal descriptions and provide calorie estimates.
 
-IMPORTANT: When the user mentions eating "the same", "same as yesterday", "same breakfast/lunch/dinner", or references a previous meal, you MUST call the searchPreviousMeals function FIRST before responding. Do NOT estimate or make up calories for referenced meals.
-
 Given a meal description (which may be a transcript from voice input), you must:
-1. Check if user is referencing a previous meal - if yes, call searchPreviousMeals function
-2. Clean up and summarize the meal description
-3. Estimate the total calories for the meal (or use the value from searchPreviousMeals if applicable)
-4. Determine the meal type (breakfast, lunch, dinner, or snack) based on context, typical meal patterns, and timestamp if provided
-5. Provide a confidence score (0-1) for your estimate
-6. List any assumptions you made
+1. Clean up and summarize the meal description
+2. Estimate the total calories for the meal
+3. Determine the meal type (breakfast, lunch, dinner, or snack) based on context, typical meal patterns, and timestamp if provided
+4. Provide a confidence score (0-1) for your estimate
+5. List any assumptions you made
 
 Guidelines for calorie estimation:
 - Use standard portion sizes unless specified
@@ -104,12 +101,10 @@ export async function POST(request: NextRequest) {
     const prompt = `${SYSTEM_PROMPT}\n\nUser input: ${userMessage}`;
 
     let result = await genAI.models.generateContent({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
-        tools: [{ functionDeclarations: [searchPreviousMealsFunction] }],
-        responseFormat: "json",
-        systemInstruction: "You have access to a searchPreviousMeals function. When users reference previous meals, you MUST call this function."
+        tools: [{ functionDeclarations: [searchPreviousMealsFunction] }]
       }
     });
 
@@ -169,7 +164,7 @@ export async function POST(request: NextRequest) {
 
         // Send function result back to model
         result = await genAI.models.generateContent({
-          model: "gemini-2.0-flash-exp",
+          model: "gemini-3-flash-preview",
           contents: [
             { text: prompt },
             { functionResponse: {
