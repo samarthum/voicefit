@@ -4,6 +4,7 @@ import { genAI } from "@/lib/gemini";
 import { errorResponse, successResponse, unauthorizedResponse, getCurrentUser } from "@/lib/api-helpers";
 import { interpretMealRequestSchema, mealInterpretationSchema } from "@/lib/validations";
 import { prisma } from "@/lib/db";
+import { SchemaType } from "@google/generative-ai";
 
 const SYSTEM_PROMPT = `You are a nutrition expert assistant. Your task is to analyze meal descriptions and provide calorie estimates.
 
@@ -38,14 +39,14 @@ const searchPreviousMealsFunction = {
   name: "searchPreviousMeals",
   description: "Search for the user's previous meals to reference when they mention eating the same thing as before. Returns meals from the past 7 days.",
   parameters: {
-    type: "object",
+    type: SchemaType.OBJECT,
     properties: {
       daysAgo: {
-        type: "integer",
+        type: SchemaType.INTEGER,
         description: "Number of days in the past to search (1 for yesterday, 2 for day before, etc.). Defaults to 1."
       },
       mealType: {
-        type: "string",
+        type: SchemaType.STRING,
         description: "Filter by meal type: breakfast, lunch, dinner, or snack. Optional.",
         enum: ["breakfast", "lunch", "dinner", "snack"]
       }
