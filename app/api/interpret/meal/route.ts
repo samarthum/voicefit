@@ -4,7 +4,7 @@ import { genAI } from "@/lib/gemini";
 import { errorResponse, successResponse, unauthorizedResponse, getCurrentUser } from "@/lib/api-helpers";
 import { interpretMealRequestSchema, mealInterpretationSchema } from "@/lib/validations";
 import { prisma } from "@/lib/db";
-import { FunctionDeclaration, SchemaType } from "@google/generative-ai";
+import { FunctionDeclaration } from "@google/genai";
 
 const SYSTEM_PROMPT = `You are a nutrition expert assistant. Your task is to analyze meal descriptions and provide calorie estimates.
 
@@ -38,18 +38,18 @@ Only output the JSON object, no other text.`;
 const searchPreviousMealsFunction: FunctionDeclaration = {
   name: "searchPreviousMeals",
   description: "Search for the user's previous meals to reference when they mention eating the same thing as before. Returns meals from the past 7 days.",
-  parameters: {
-    type: SchemaType.OBJECT,
+  parametersJsonSchema: {
+    type: "object",
     properties: {
       daysAgo: {
-        type: SchemaType.INTEGER,
+        type: "integer",
         description: "Number of days in the past to search (1 for yesterday, 2 for day before, etc.). Defaults to 1."
-      } as any,
+      },
       mealType: {
-        type: SchemaType.STRING,
+        type: "string",
         description: "Filter by meal type: breakfast, lunch, dinner, or snack. Optional.",
         enum: ["breakfast", "lunch", "dinner", "snack"]
-      } as any
+      }
     },
     required: []
   }
@@ -100,20 +100,20 @@ export async function POST(request: NextRequest) {
     userMessage = `[${contextParts.join(', ')}] ${transcript}`;
 
     // Call Gemini with function calling support
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3-flash-preview",
-      tools: [{
-        functionDeclarations: [searchPreviousMealsFunction]
-      }]
+    const prompt = `${SYSTEM_PROMPT}\n\nUser input: ${userMessage}`;
+
+    let result = await genAI.models.generateContent({
+      model: "gemini-2.0-flash-exp",
+      contents: prompt,
+      config: {
+        tools: [{ functionDeclarations: [searchPreviousMealsFunction] }]
+      }
     });
 
-    const prompt = `${SYSTEM_PROMPT}\n\nUser input: ${userMessage}`;
-    let result = await model.generateContent(prompt);
-
     // Handle function calls
-    let functionCallResponse = result.response.functionCalls();
-    if (functionCallResponse && functionCallResponse.length > 0) {
-      const functionCall = functionCallResponse[0];
+    const functionCalls = result.functionCalls;
+    if (functionCalls && functionCalls.length > 0) {
+      const functionCall = functionCalls[0];
 
       if (functionCall.name === "searchPreviousMeals") {
         // Execute the function
@@ -161,17 +161,23 @@ export async function POST(request: NextRequest) {
         }));
 
         // Send function result back to model
-        result = await model.generateContent([
-          { text: prompt },
-          { functionResponse: {
-            name: functionCall.name,
-            response: { meals: functionResponse }
-          }}
-        ]);
+        result = await genAI.models.generateContent({
+          model: "gemini-2.0-flash-exp",
+          contents: [
+            { text: prompt },
+            { functionResponse: {
+              name: functionCall.name,
+              response: { meals: functionResponse }
+            }}
+          ],
+          config: {
+            tools: [{ functionDeclarations: [searchPreviousMealsFunction] }]
+          }
+        });
       }
     }
 
-    const content = result.response.text();
+    const content = result.text;
     if (!content) {
       return errorResponse("Failed to interpret meal. Please try again.", 500);
     }
