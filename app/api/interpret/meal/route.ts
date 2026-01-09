@@ -14,7 +14,7 @@ Given a meal description (which may be a transcript from voice input), you must:
 4. Provide a confidence score (0-1) for your estimate
 5. List any assumptions you made
 
-If the user references a previous meal (e.g., "same breakfast as yesterday", "same as last Monday's lunch"), look at the meal history provided and use that meal's details and calorie count.
+If the user references a previous meal (e.g., "same breakfast as yesterday", "same as last Monday's lunch"), use the searchPreviousMeals function to find that meal and use its details and calorie count.
 
 Guidelines for calorie estimation:
 - Use standard portion sizes unless specified
@@ -32,6 +32,27 @@ You MUST respond with valid JSON matching this exact schema:
 }
 
 Only output the JSON object, no other text.`;
+
+// Function declaration for searching previous meals
+const searchPreviousMealsFunction = {
+  name: "searchPreviousMeals",
+  description: "Search for the user's previous meals to reference when they mention eating the same thing as before. Returns meals from the past 7 days.",
+  parameters: {
+    type: "object",
+    properties: {
+      daysAgo: {
+        type: "integer",
+        description: "Number of days in the past to search (1 for yesterday, 2 for day before, etc.). Defaults to 1."
+      },
+      mealType: {
+        type: "string",
+        description: "Filter by meal type: breakfast, lunch, dinner, or snack. Optional.",
+        enum: ["breakfast", "lunch", "dinner", "snack"]
+      }
+    },
+    required: []
+  }
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,29 +73,6 @@ export async function POST(request: NextRequest) {
     }
 
     const { transcript, mealType, eatenAt } = parseResult.data;
-
-    // Fetch recent meals (past 7 days) for context
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const recentMeals = await prisma.mealLog.findMany({
-      where: {
-        userId: user.id,
-        eatenAt: {
-          gte: sevenDaysAgo
-        }
-      },
-      orderBy: {
-        eatenAt: 'desc'
-      },
-      take: 20, // Limit to 20 most recent meals to avoid token limits
-      select: {
-        eatenAt: true,
-        mealType: true,
-        description: true,
-        calories: true
-      }
-    });
 
     // Build user message with optional context
     let userMessage = transcript;
@@ -100,31 +98,78 @@ export async function POST(request: NextRequest) {
 
     userMessage = `[${contextParts.join(', ')}] ${transcript}`;
 
-    // Format meal history for context
-    let mealHistoryContext = '';
-    if (recentMeals.length > 0) {
-      mealHistoryContext = '\n\nRecent meal history (past 7 days):\n';
-      recentMeals.forEach((meal) => {
-        const mealDate = new Date(meal.eatenAt);
-        const mealDateStr = mealDate.toLocaleDateString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric'
+    // Call Gemini with function calling support
+    const model = genAI.getGenerativeModel({
+      model: "gemini-3-flash-preview",
+      tools: [{
+        functionDeclarations: [searchPreviousMealsFunction]
+      }]
+    });
+
+    const prompt = `${SYSTEM_PROMPT}\n\nUser input: ${userMessage}`;
+    let result = await model.generateContent(prompt);
+
+    // Handle function calls
+    let functionCallResponse = result.response.functionCalls();
+    if (functionCallResponse && functionCallResponse.length > 0) {
+      const functionCall = functionCallResponse[0];
+
+      if (functionCall.name === "searchPreviousMeals") {
+        // Execute the function
+        const args = functionCall.args as { daysAgo?: number; mealType?: string };
+        const daysAgo = args.daysAgo || 1;
+        const mealTypeFilter = args.mealType;
+
+        // Calculate the target date
+        const targetDate = new Date(timestamp);
+        targetDate.setDate(targetDate.getDate() - daysAgo);
+
+        // Search for meals on that day (with some tolerance)
+        const startOfDay = new Date(targetDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(targetDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const meals = await prisma.mealLog.findMany({
+          where: {
+            userId: user.id,
+            eatenAt: {
+              gte: startOfDay,
+              lte: endOfDay
+            },
+            ...(mealTypeFilter ? { mealType: mealTypeFilter } : {})
+          },
+          orderBy: {
+            eatenAt: 'desc'
+          },
+          select: {
+            eatenAt: true,
+            mealType: true,
+            description: true,
+            calories: true
+          }
         });
-        const mealTimeStr = mealDate.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        });
-        mealHistoryContext += `- ${mealDateStr} ${mealTimeStr} (${meal.mealType}): ${meal.description} - ${meal.calories} cal\n`;
-      });
+
+        // Format response
+        const functionResponse = meals.map(meal => ({
+          date: meal.eatenAt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+          time: meal.eatenAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+          mealType: meal.mealType,
+          description: meal.description,
+          calories: meal.calories
+        }));
+
+        // Send function result back to model
+        result = await model.generateContent([
+          { text: prompt },
+          { functionResponse: {
+            name: functionCall.name,
+            response: { meals: functionResponse }
+          }}
+        ]);
+      }
     }
 
-    // Call Gemini 3 Flash for interpretation
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-    const prompt = `${SYSTEM_PROMPT}${mealHistoryContext}\n\nUser input: ${userMessage}`;
-
-    const result = await model.generateContent(prompt);
     const content = result.response.text();
     if (!content) {
       return errorResponse("Failed to interpret meal. Please try again.", 500);
