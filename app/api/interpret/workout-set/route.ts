@@ -56,12 +56,14 @@ export async function POST(request: NextRequest) {
 
     const { transcript } = parseResult.data;
 
-    // Call Gemini 3 Flash for interpretation
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+    // Call Gemini Flash for interpretation
     const prompt = `${SYSTEM_PROMPT}\n\nUser input: ${transcript}`;
 
-    const result = await model.generateContent(prompt);
-    const content = result.response.text();
+    const result = await genAI.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt
+    });
+    const content = result.text;
     if (!content) {
       return errorResponse("Failed to interpret workout set. Please try again.", 500);
     }

@@ -1,8 +1,10 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { genAI } from "@/lib/gemini";
-import { errorResponse, successResponse, unauthorizedResponse } from "@/lib/api-helpers";
+import { errorResponse, successResponse, unauthorizedResponse, getCurrentUser } from "@/lib/api-helpers";
 import { interpretMealRequestSchema, mealInterpretationSchema } from "@/lib/validations";
+import { prisma } from "@/lib/db";
+import { Type } from "@google/genai";
 
 const SYSTEM_PROMPT = `You are a nutrition expert assistant. Your task is to analyze meal descriptions and provide calorie estimates.
 
@@ -30,13 +32,36 @@ You MUST respond with valid JSON matching this exact schema:
 
 Only output the JSON object, no other text.`;
 
+// Function declaration for searching previous meals
+const searchPreviousMealsFunction = {
+  name: "searchPreviousMeals",
+  description: "Search for the user's previous meals to reference when they mention eating the same thing as before. Returns meals from the past 7 days.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      daysAgo: {
+        type: Type.INTEGER,
+        description: "Number of days in the past to search (1 for yesterday, 2 for day before, etc.). Defaults to 1."
+      },
+      mealType: {
+        type: Type.STRING,
+        description: "Filter by meal type: breakfast, lunch, dinner, or snack. Optional.",
+        enum: ["breakfast", "lunch", "dinner", "snack"]
+      }
+    },
+    required: []
+  }
+};
+
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
+    // Check authentication and get user
     const { userId } = await auth();
     if (!userId) {
       return unauthorizedResponse();
     }
+
+    const user = await getCurrentUser();
 
     // Parse and validate request body
     const body = await request.json();
@@ -72,12 +97,89 @@ export async function POST(request: NextRequest) {
 
     userMessage = `[${contextParts.join(', ')}] ${transcript}`;
 
-    // Call Gemini 3 Flash for interpretation
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+    // Call Gemini with function calling support
     const prompt = `${SYSTEM_PROMPT}\n\nUser input: ${userMessage}`;
 
-    const result = await model.generateContent(prompt);
-    const content = result.response.text();
+    let result = await genAI.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        tools: [{ functionDeclarations: [searchPreviousMealsFunction] }]
+      }
+    });
+
+    // Handle function calls
+    console.log("Result object:", JSON.stringify(result, null, 2));
+    const functionCalls = result.functionCalls;
+    console.log("Function calls:", functionCalls);
+
+    if (functionCalls && functionCalls.length > 0) {
+      const functionCall = functionCalls[0];
+      console.log("Processing function call:", functionCall.name);
+
+      if (functionCall.name === "searchPreviousMeals") {
+        // Execute the function
+        const args = functionCall.args as { daysAgo?: number; mealType?: string };
+        const daysAgo = args.daysAgo || 1;
+        const mealTypeFilter = args.mealType;
+
+        // Calculate the target date
+        const targetDate = new Date(timestamp);
+        targetDate.setDate(targetDate.getDate() - daysAgo);
+
+        // Search for meals on that day (with some tolerance)
+        const startOfDay = new Date(targetDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(targetDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const meals = await prisma.mealLog.findMany({
+          where: {
+            userId: user.id,
+            eatenAt: {
+              gte: startOfDay,
+              lte: endOfDay
+            },
+            ...(mealTypeFilter ? { mealType: mealTypeFilter } : {})
+          },
+          orderBy: {
+            eatenAt: 'desc'
+          },
+          select: {
+            eatenAt: true,
+            mealType: true,
+            description: true,
+            calories: true
+          }
+        });
+
+        // Format response
+        const functionResponse = meals.map((meal: { eatenAt: Date; mealType: string; description: string; calories: number }) => ({
+          date: meal.eatenAt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+          time: meal.eatenAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+          mealType: meal.mealType,
+          description: meal.description,
+          calories: meal.calories
+        }));
+
+        // Send function result back to model
+        result = await genAI.models.generateContent({
+          model: "gemini-3-flash-preview",
+          contents: [
+            { text: prompt },
+            { functionResponse: {
+              name: functionCall.name,
+              response: { meals: functionResponse }
+            }}
+          ],
+          config: {
+            tools: [{ functionDeclarations: [searchPreviousMealsFunction] }]
+          }
+        });
+      }
+    }
+
+    const content = result.text;
     if (!content) {
       return errorResponse("Failed to interpret meal. Please try again.", 500);
     }
@@ -85,7 +187,9 @@ export async function POST(request: NextRequest) {
     // Parse and validate the response
     let interpretation;
     try {
-      interpretation = JSON.parse(content);
+      // Strip markdown code fences if present
+      const cleanedContent = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      interpretation = JSON.parse(cleanedContent);
     } catch {
       console.error("Failed to parse LLM response:", content);
       return errorResponse("Failed to parse interpretation. Please try again.", 500);
