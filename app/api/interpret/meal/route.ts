@@ -4,7 +4,7 @@ import { genAI } from "@/lib/gemini";
 import { errorResponse, successResponse, unauthorizedResponse, getCurrentUser } from "@/lib/api-helpers";
 import { interpretMealRequestSchema, mealInterpretationSchema } from "@/lib/validations";
 import { prisma } from "@/lib/db";
-import { FunctionDeclaration } from "@google/generative-ai";
+import { FunctionDeclaration, SchemaType } from "@google/generative-ai";
 
 const SYSTEM_PROMPT = `You are a nutrition expert assistant. Your task is to analyze meal descriptions and provide calorie estimates.
 
@@ -35,25 +35,25 @@ You MUST respond with valid JSON matching this exact schema:
 Only output the JSON object, no other text.`;
 
 // Function declaration for searching previous meals
-const searchPreviousMealsFunction = {
+const searchPreviousMealsFunction: FunctionDeclaration = {
   name: "searchPreviousMeals",
   description: "Search for the user's previous meals to reference when they mention eating the same thing as before. Returns meals from the past 7 days.",
   parameters: {
-    type: "object" as const,
+    type: SchemaType.OBJECT,
     properties: {
       daysAgo: {
-        type: "integer" as const,
+        type: SchemaType.INTEGER,
         description: "Number of days in the past to search (1 for yesterday, 2 for day before, etc.). Defaults to 1."
-      },
+      } as any,
       mealType: {
-        type: "string" as const,
+        type: SchemaType.STRING,
         description: "Filter by meal type: breakfast, lunch, dinner, or snack. Optional.",
         enum: ["breakfast", "lunch", "dinner", "snack"]
-      }
+      } as any
     },
     required: []
   }
-} satisfies FunctionDeclaration;
+};
 
 export async function POST(request: NextRequest) {
   try {
