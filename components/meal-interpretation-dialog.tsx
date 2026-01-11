@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -45,17 +45,9 @@ export function MealInterpretationDialog({
   onSave,
   onCancel,
 }: MealInterpretationDialogProps) {
-  const [mealType, setMealType] = useState<string>("breakfast");
-  const [description, setDescription] = useState("");
-  const [calories, setCalories] = useState<number>(0);
-
-  useEffect(() => {
-    if (interpretation) {
-      setMealType(interpretation.mealType);
-      setDescription(interpretation.description);
-      setCalories(interpretation.calories);
-    }
-  }, [interpretation]);
+  const [mealType, setMealType] = useState<string>(interpretation?.mealType ?? "breakfast");
+  const [description, setDescription] = useState(interpretation?.description ?? "");
+  const [calories, setCalories] = useState<number>(interpretation?.calories ?? 0);
 
   const handleSave = () => {
     if (description.trim() && calories >= 0) {

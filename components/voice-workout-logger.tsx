@@ -187,6 +187,7 @@ export function VoiceWorkoutLogger({ sessionId, onSetSaved }: VoiceWorkoutLogger
       />
 
       <WorkoutSetInterpretationDialog
+        key={interpretation ? `${interpretation.exerciseName}-${interpretation.confidence}` : 'empty'}
         open={state === "reviewing" || state === "interpreting" || state === "saving"}
         onOpenChange={(open) => {
           if (!open) resetAll();

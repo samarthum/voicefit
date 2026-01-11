@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -41,23 +41,12 @@ export function WorkoutSetInterpretationDialog({
   onSave,
   onCancel,
 }: WorkoutSetInterpretationDialogProps) {
-  const [exerciseName, setExerciseName] = useState("");
-  const [exerciseType, setExerciseType] = useState<"resistance" | "cardio">("resistance");
-  const [reps, setReps] = useState<string>("");
-  const [weightKg, setWeightKg] = useState<string>("");
-  const [durationMinutes, setDurationMinutes] = useState<string>("");
-  const [notes, setNotes] = useState("");
-
-  useEffect(() => {
-    if (interpretation) {
-      setExerciseName(interpretation.exerciseName);
-      setExerciseType(interpretation.exerciseType);
-      setReps(interpretation.reps?.toString() ?? "");
-      setWeightKg(interpretation.weightKg?.toString() ?? "");
-      setDurationMinutes(interpretation.durationMinutes?.toString() ?? "");
-      setNotes(interpretation.notes ?? "");
-    }
-  }, [interpretation]);
+  const [exerciseName, setExerciseName] = useState(interpretation?.exerciseName ?? "");
+  const [exerciseType, setExerciseType] = useState<"resistance" | "cardio">(interpretation?.exerciseType ?? "resistance");
+  const [reps, setReps] = useState<string>(interpretation?.reps?.toString() ?? "");
+  const [weightKg, setWeightKg] = useState<string>(interpretation?.weightKg?.toString() ?? "");
+  const [durationMinutes, setDurationMinutes] = useState<string>(interpretation?.durationMinutes?.toString() ?? "");
+  const [notes, setNotes] = useState(interpretation?.notes ?? "");
 
   const handleSave = () => {
     const isValid = exerciseType === "cardio"

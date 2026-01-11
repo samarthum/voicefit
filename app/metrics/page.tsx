@@ -49,7 +49,7 @@ function MetricsPageContent() {
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get("tab") || "steps";
 
-  const [todayMetric, setTodayMetric] = useState<DailyMetric | null>(null);
+  const [_todayMetric, setTodayMetric] = useState<DailyMetric | null>(null);
   const [recentMetrics, setRecentMetrics] = useState<DailyMetric[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
