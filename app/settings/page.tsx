@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,32 @@ interface FitbitStatus {
 }
 
 export default function SettingsPage() {
+  return (
+    <Suspense fallback={<SettingsPageSkeleton />}>
+      <SettingsPageContent />
+    </Suspense>
+  );
+}
+
+function SettingsPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      <header className="sticky top-0 z-40 bg-gradient-to-b from-background via-background to-background/80 backdrop-blur-sm border-b border-border/50">
+        <div className="flex h-16 items-center justify-between px-4 max-w-lg mx-auto">
+          <h1 className="text-lg font-display text-foreground">Settings</h1>
+        </div>
+      </header>
+      <main className="container max-w-lg mx-auto px-4 py-6 space-y-6">
+        <Skeleton className="h-[280px] w-full rounded-2xl" />
+        <Skeleton className="h-[180px] w-full rounded-2xl" />
+        <Skeleton className="h-[140px] w-full rounded-2xl" />
+      </main>
+      <BottomNav />
+    </div>
+  );
+}
+
+function SettingsPageContent() {
   const searchParams = useSearchParams();
   const [_settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
