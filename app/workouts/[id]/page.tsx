@@ -18,8 +18,10 @@ interface WorkoutSet {
   id: string;
   performedAt: string;
   exerciseName: string;
-  reps: number;
+  exerciseType: string;
+  reps: number | null;
   weightKg: number | null;
+  durationMinutes: number | null;
   notes: string | null;
 }
 

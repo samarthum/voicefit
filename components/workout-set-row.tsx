@@ -12,8 +12,10 @@ import {
 interface WorkoutSetRowProps {
   id: string;
   exerciseName: string;
-  reps: number;
+  exerciseType: string;
+  reps: number | null;
   weightKg: number | null;
+  durationMinutes: number | null;
   notes: string | null;
   index: number;
   onEdit?: (id: string) => void;
@@ -23,13 +25,24 @@ interface WorkoutSetRowProps {
 export function WorkoutSetRow({
   id,
   exerciseName,
+  exerciseType,
   reps,
   weightKg,
+  durationMinutes,
   notes,
   index,
   onEdit,
   onDelete,
 }: WorkoutSetRowProps) {
+  const getExerciseDetails = () => {
+    if (exerciseType === "cardio") {
+      return `${durationMinutes} min${notes ? ` (${notes})` : ""}`;
+    } else {
+      // Resistance training
+      return `${reps || 0} reps${weightKg ? ` @ ${weightKg} kg` : ""}${notes ? ` (${notes})` : ""}`;
+    }
+  };
+
   return (
     <div className="flex items-center justify-between py-3 border-b last:border-b-0">
       <div className="flex items-center gap-3">
@@ -37,9 +50,7 @@ export function WorkoutSetRow({
         <div>
           <p className="text-sm font-medium">{exerciseName}</p>
           <p className="text-sm text-muted-foreground">
-            {reps} reps
-            {weightKg && ` @ ${weightKg} kg`}
-            {notes && ` (${notes})`}
+            {getExerciseDetails()}
           </p>
         </div>
       </div>

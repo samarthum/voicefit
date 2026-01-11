@@ -71,16 +71,18 @@ model WorkoutSession {
 }
 
 model WorkoutSet {
-  id            String   @id @default(cuid())
-  sessionId     String
-  performedAt   DateTime
-  exerciseName  String
-  reps          Int
-  weightKg      Float?
-  notes         String?
-  transcriptRaw String?  // Original transcript user approved
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  sessionId       String
+  performedAt     DateTime
+  exerciseName    String
+  exerciseType    String   @default("resistance") // "resistance" or "cardio"
+  reps            Int?     // For resistance training
+  weightKg        Float?   // For resistance training
+  durationMinutes Int?     // For cardio/freeform exercises
+  notes           String?
+  transcriptRaw   String?  // Original transcript user approved
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   session WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 

@@ -114,8 +114,10 @@ export function VoiceWorkoutLogger({ sessionId, onSetSaved }: VoiceWorkoutLogger
   // Handle set save
   const handleSetSave = async (setData: {
     exerciseName: string;
-    reps: number;
+    exerciseType: "resistance" | "cardio";
+    reps: number | null;
     weightKg: number | null;
+    durationMinutes: number | null;
     notes: string | null;
   }) => {
     setState("saving");

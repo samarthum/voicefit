@@ -24,8 +24,10 @@ interface WorkoutSetInterpretationDialogProps {
   isLoading?: boolean;
   onSave: (data: {
     exerciseName: string;
-    reps: number;
+    exerciseType: "resistance" | "cardio";
+    reps: number | null;
     weightKg: number | null;
+    durationMinutes: number | null;
     notes: string | null;
   }) => void;
   onCancel: () => void;
@@ -40,25 +42,35 @@ export function WorkoutSetInterpretationDialog({
   onCancel,
 }: WorkoutSetInterpretationDialogProps) {
   const [exerciseName, setExerciseName] = useState("");
-  const [reps, setReps] = useState<number>(0);
+  const [exerciseType, setExerciseType] = useState<"resistance" | "cardio">("resistance");
+  const [reps, setReps] = useState<string>("");
   const [weightKg, setWeightKg] = useState<string>("");
+  const [durationMinutes, setDurationMinutes] = useState<string>("");
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
     if (interpretation) {
       setExerciseName(interpretation.exerciseName);
-      setReps(interpretation.reps ?? 0);
+      setExerciseType(interpretation.exerciseType);
+      setReps(interpretation.reps?.toString() ?? "");
       setWeightKg(interpretation.weightKg?.toString() ?? "");
+      setDurationMinutes(interpretation.durationMinutes?.toString() ?? "");
       setNotes(interpretation.notes ?? "");
     }
   }, [interpretation]);
 
   const handleSave = () => {
-    if (exerciseName.trim() && reps >= 0) {
+    const isValid = exerciseType === "cardio"
+      ? exerciseName.trim() && durationMinutes
+      : exerciseName.trim();
+
+    if (isValid) {
       onSave({
         exerciseName: exerciseName.trim(),
-        reps,
+        exerciseType,
+        reps: reps ? parseInt(reps) : null,
         weightKg: weightKg ? parseFloat(weightKg) : null,
+        durationMinutes: durationMinutes ? parseInt(durationMinutes) : null,
         notes: notes.trim() || null,
       });
     }
@@ -104,40 +116,77 @@ export function WorkoutSetInterpretationDialog({
               )}
 
               <div className="space-y-2">
+                <Label htmlFor="exerciseType">Exercise Type</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={exerciseType === "resistance" ? "default" : "outline"}
+                    onClick={() => setExerciseType("resistance")}
+                    className="flex-1"
+                  >
+                    Resistance
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={exerciseType === "cardio" ? "default" : "outline"}
+                    onClick={() => setExerciseType("cardio")}
+                    className="flex-1"
+                  >
+                    Cardio
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="exerciseName">Exercise</Label>
                 <Input
                   id="exerciseName"
                   value={exerciseName}
                   onChange={(e) => setExerciseName(e.target.value)}
-                  placeholder="e.g., Squat, Bench Press"
+                  placeholder={exerciseType === "cardio" ? "e.g., Running, Dancing, Walking" : "e.g., Squat, Bench Press"}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reps">Reps</Label>
-                  <Input
-                    id="reps"
-                    type="number"
-                    min="0"
-                    value={reps}
-                    onChange={(e) => setReps(parseInt(e.target.value) || 0)}
-                  />
-                </div>
+              {exerciseType === "resistance" ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reps">Reps</Label>
+                    <Input
+                      id="reps"
+                      type="number"
+                      min="0"
+                      value={reps}
+                      onChange={(e) => setReps(e.target.value)}
+                      placeholder="Optional"
+                    />
+                  </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="weightKg">Weight (kg)</Label>
+                    <Input
+                      id="weightKg"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={weightKg}
+                      onChange={(e) => setWeightKg(e.target.value)}
+                      placeholder="Optional"
+                    />
+                  </div>
+                </div>
+              ) : (
                 <div className="space-y-2">
-                  <Label htmlFor="weightKg">Weight (kg)</Label>
+                  <Label htmlFor="durationMinutes">Duration (minutes)</Label>
                   <Input
-                    id="weightKg"
+                    id="durationMinutes"
                     type="number"
                     min="0"
-                    step="0.5"
-                    value={weightKg}
-                    onChange={(e) => setWeightKg(e.target.value)}
-                    placeholder="Optional"
+                    value={durationMinutes}
+                    onChange={(e) => setDurationMinutes(e.target.value)}
+                    placeholder="e.g., 30"
                   />
                 </div>
-              </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
@@ -170,7 +219,7 @@ export function WorkoutSetInterpretationDialog({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={isLoading || !exerciseName.trim() || reps < 0}
+            disabled={isLoading || !exerciseName.trim() || (exerciseType === "cardio" && !durationMinutes)}
           >
             Save Set
           </Button>

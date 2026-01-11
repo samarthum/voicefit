@@ -44,11 +44,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (parseResult.data.exerciseName) {
       updateData.exerciseName = parseResult.data.exerciseName;
     }
+    if (parseResult.data.exerciseType !== undefined) {
+      updateData.exerciseType = parseResult.data.exerciseType;
+    }
     if (parseResult.data.reps !== undefined) {
       updateData.reps = parseResult.data.reps;
     }
     if (parseResult.data.weightKg !== undefined) {
       updateData.weightKg = parseResult.data.weightKg;
+    }
+    if (parseResult.data.durationMinutes !== undefined) {
+      updateData.durationMinutes = parseResult.data.durationMinutes;
     }
     if (parseResult.data.notes !== undefined) {
       updateData.notes = parseResult.data.notes;

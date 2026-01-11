@@ -33,8 +33,10 @@ export const interpretWorkoutSetRequestSchema = z.object({
 // Workout set interpretation response from LLM
 export const workoutSetInterpretationSchema = z.object({
   exerciseName: z.string(),
+  exerciseType: z.enum(["resistance", "cardio"]),
   reps: z.number().int().min(0).nullable(),
   weightKg: z.number().min(0).nullable(),
+  durationMinutes: z.number().int().min(0).nullable(),
   notes: z.string().nullable(),
   confidence: z.number().min(0).max(1),
   assumptions: z.array(z.string()),
@@ -74,8 +76,10 @@ export const createWorkoutSetSchema = z.object({
   sessionId: z.string().cuid(),
   performedAt: z.string().datetime().optional(),
   exerciseName: z.string().min(1, "Exercise name is required"),
-  reps: z.number().int().min(0, "Reps must be non-negative"),
+  exerciseType: z.enum(["resistance", "cardio"]).default("resistance"),
+  reps: z.number().int().min(0, "Reps must be non-negative").optional().nullable(),
   weightKg: z.number().min(0).optional().nullable(),
+  durationMinutes: z.number().int().min(0).optional().nullable(),
   notes: z.string().optional().nullable(),
   transcriptRaw: z.string().optional(),
 });
@@ -83,8 +87,10 @@ export const createWorkoutSetSchema = z.object({
 // Update workout set request
 export const updateWorkoutSetSchema = z.object({
   exerciseName: z.string().min(1).optional(),
-  reps: z.number().int().min(0).optional(),
+  exerciseType: z.enum(["resistance", "cardio"]).optional(),
+  reps: z.number().int().min(0).optional().nullable(),
   weightKg: z.number().min(0).optional().nullable(),
+  durationMinutes: z.number().int().min(0).optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 
