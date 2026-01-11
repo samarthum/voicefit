@@ -17,7 +17,7 @@ interface UserSettings {
 }
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [_settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 

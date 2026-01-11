@@ -22,8 +22,10 @@ export interface MealInterpretation {
 // Workout set interpretation from LLM
 export interface WorkoutSetInterpretation {
   exerciseName: string;
+  exerciseType: "resistance" | "cardio";
   reps: number | null;
   weightKg: number | null;
+  durationMinutes: number | null;
   notes: string | null;
   confidence: number; // 0-1
   assumptions: string[];
@@ -92,8 +94,10 @@ export interface WorkoutSetDisplay {
   id: string;
   performedAt: string;
   exerciseName: string;
-  reps: number;
+  exerciseType: string;
+  reps: number | null;
   weightKg: number | null;
+  durationMinutes: number | null;
   notes: string | null;
   transcriptRaw: string | null;
 }

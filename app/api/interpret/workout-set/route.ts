@@ -5,32 +5,39 @@ import { errorResponse, successResponse, unauthorizedResponse } from "@/lib/api-
 import { interpretWorkoutSetRequestSchema, workoutSetInterpretationSchema } from "@/lib/validations";
 import { EXERCISES } from "@/lib/exercises";
 
-const SYSTEM_PROMPT = `You are a fitness coach assistant. Your task is to parse workout set descriptions from voice input.
+const SYSTEM_PROMPT = `You are a fitness coach assistant. Your task is to parse workout descriptions from voice input. You handle both resistance training (sets with reps and weight) and cardio/freeform exercises (duration-based activities).
 
-Given a description of an exercise set, extract:
-1. Exercise name - MUST map to one of the approved exercises listed below
-2. Number of repetitions (reps)
-3. Weight in kilograms (if mentioned)
-4. Any relevant notes (like "empty barbell", "to failure", etc.)
-5. Confidence score (0-1) for your interpretation
-6. Assumptions made during interpretation
+Given a workout description, extract:
+1. Exercise name - For resistance training, MUST map to one of the approved exercises. For cardio, use descriptive names like "Running", "Cycling", "Dancing", "Walking", etc.
+2. Exercise type - "resistance" for weight/rep-based exercises, "cardio" for duration-based activities
+3. For RESISTANCE exercises: number of repetitions (reps) and weight in kilograms
+4. For CARDIO exercises: duration in minutes
+5. Any relevant notes
+6. Confidence score (0-1) for your interpretation
+7. Assumptions made during interpretation
 
-APPROVED EXERCISES (you MUST use one of these exact names):
+APPROVED RESISTANCE EXERCISES:
 ${EXERCISES.join(", ")}
 
+CARDIO/FREEFORM EXERCISES (examples - not limited to):
+Running, Walking, Jogging, Cycling, Swimming, Dancing, Hiking, Jump Rope, Rowing (cardio), Elliptical, Stair Climbing, Boxing, Kickboxing, Yoga, Pilates, Stretching, etc.
+
 Guidelines:
-- Map the user's input to the closest matching approved exercise name
-- Common mappings: "bench" -> "Bench Press", "squats" -> "Squat", "deadlifts" -> "Deadlift", "OHP" -> "Overhead Press", "rows" -> "Barbell Row"
-- If weight is mentioned in pounds, convert to kg (1 lb = 0.453592 kg, round to nearest 0.5 kg)
-- "Empty barbell" typically means 20 kg (Olympic bar) - note this in assumptions but set weightKg to 20
-- If reps are not mentioned, set to null
-- If weight is not mentioned, set to null
+- First determine if this is resistance training (reps/sets/weight) or cardio (duration-based)
+- For resistance: Map to closest approved exercise name. Common mappings: "bench" -> "Bench Press", "squats" -> "Squat"
+- For cardio: Use clear, descriptive names (capitalize first letters)
+- If weight is in pounds, convert to kg (1 lb = 0.453592 kg, round to nearest 0.5 kg)
+- "Empty barbell" typically means 20 kg - note in assumptions
+- For resistance: If reps not mentioned, set to null. If weight not mentioned, set to null. Set durationMinutes to null.
+- For cardio: Set reps and weightKg to null. Extract duration (convert hours to minutes if needed)
 
 You MUST respond with valid JSON matching this exact schema:
 {
-  "exerciseName": "exact name from approved list",
-  "reps": integer or null,
-  "weightKg": number or null (in kg),
+  "exerciseName": "exercise name string",
+  "exerciseType": "resistance" or "cardio",
+  "reps": integer or null (for resistance only),
+  "weightKg": number or null (for resistance only),
+  "durationMinutes": integer or null (for cardio only),
   "notes": "any relevant notes" or null,
   "confidence": number between 0 and 1,
   "assumptions": ["array of assumptions made"]

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       return errorResponse(parseResult.error.issues[0].message);
     }
 
-    const { sessionId, performedAt, exerciseName, reps, weightKg, notes, transcriptRaw } =
+    const { sessionId, performedAt, exerciseName, exerciseType, reps, weightKg, durationMinutes, notes, transcriptRaw } =
       parseResult.data;
 
     // Verify session exists and belongs to user
@@ -48,8 +48,10 @@ export async function POST(request: NextRequest) {
         sessionId,
         performedAt: performedAt ? new Date(performedAt) : new Date(),
         exerciseName,
+        exerciseType,
         reps,
         weightKg,
+        durationMinutes,
         notes,
         transcriptRaw,
       },
