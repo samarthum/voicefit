@@ -17,9 +17,10 @@ model AppUser {
   stepGoal    Int @default(10000)
 
   // Relations
-  dailyMetrics    DailyMetric[]
-  meals           MealLog[]
-  workoutSessions WorkoutSession[]
+  dailyMetrics     DailyMetric[]
+  fitbitConnection FitbitConnection?
+  meals            MealLog[]
+  workoutSessions  WorkoutSession[]
 }
 
 model DailyMetric {
@@ -35,6 +36,21 @@ model DailyMetric {
 
   @@unique([userId, date])
   @@index([userId])
+}
+
+model FitbitConnection {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  fitbitUserId   String   @unique
+  accessToken    String
+  refreshToken   String
+  scope          String
+  expiresAt      DateTime
+  lastSyncAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model MealLog {

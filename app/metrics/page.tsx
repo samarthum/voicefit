@@ -63,6 +63,12 @@ function MetricsPageContent() {
 
   const fetchMetrics = useCallback(async () => {
     try {
+      try {
+        await fetch(`/api/fitbit/sync?date=${encodeURIComponent(today)}`);
+      } catch (error) {
+        console.error("Fitbit sync error:", error);
+      }
+
       const [todayRes, historyRes] = await Promise.all([
         fetch(`/api/daily-metrics/${today}`),
         fetch("/api/daily-metrics?limit=7"),

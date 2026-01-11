@@ -51,3 +51,6 @@ All API routes use helpers from `lib/api-helpers.ts`:
 - `OPENAI_API_KEY` - For audio transcription
 - `GOOGLE_API_KEY` - For Gemini interpretation
 - Clerk keys for authentication
+- `FITBIT_CLIENT_ID` - Fitbit OAuth client ID
+- `FITBIT_CLIENT_SECRET` - Fitbit OAuth client secret
+- `FITBIT_REDIRECT_URI` - Fitbit OAuth redirect URI (points to `/api/fitbit/callback`)

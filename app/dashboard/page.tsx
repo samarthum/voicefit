@@ -60,7 +60,17 @@ export default function DashboardPage() {
   const fetchDashboard = useCallback(async (date: string) => {
     try {
       setIsLoading(true);
+      const isTodayDate = date === new Date().toLocaleDateString("en-CA");
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      if (isTodayDate) {
+        try {
+          await fetch(`/api/fitbit/sync?date=${encodeURIComponent(date)}`);
+        } catch (error) {
+          console.error("Fitbit sync error:", error);
+        }
+      }
+
       const response = await fetch(
         `/api/dashboard?timezone=${encodeURIComponent(timezone)}&date=${date}`
       );
