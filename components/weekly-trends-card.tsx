@@ -3,13 +3,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Bar,
+  BarChart,
   LineChart,
   Line,
+  ReferenceLine,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
+import { Check } from "lucide-react";
 
 interface WeeklyTrendsCardProps {
   data: {
@@ -19,9 +24,10 @@ interface WeeklyTrendsCardProps {
     weight: number | null;
     workouts: number;
   }[];
+  calorieGoal: number;
 }
 
-export function WeeklyTrendsCard({ data }: WeeklyTrendsCardProps) {
+export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", { weekday: "short" });
@@ -30,7 +36,14 @@ export function WeeklyTrendsCard({ data }: WeeklyTrendsCardProps) {
   const chartData = data.map((d) => ({
     ...d,
     displayDate: formatDate(d.date),
+    calorieDelta: d.calories - calorieGoal,
   }));
+
+  const maxDelta = Math.max(
+    250,
+    ...chartData.map((d) => Math.abs(d.calorieDelta))
+  );
+  const calorieDomain = [-maxDelta * 1.1, maxDelta * 1.1] as [number, number];
 
   const tooltipStyle = {
     backgroundColor: "var(--color-card)",
@@ -60,7 +73,7 @@ export function WeeklyTrendsCard({ data }: WeeklyTrendsCardProps) {
           <TabsContent value="calories" className="mt-4">
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
+                <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
                   <XAxis
                     dataKey="displayDate"
                     tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
@@ -71,23 +84,36 @@ export function WeeklyTrendsCard({ data }: WeeklyTrendsCardProps) {
                     tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
-                    width={40}
+                    width={50}
+                    domain={calorieDomain}
+                    tickFormatter={(value) => `${value > 0 ? "+" : ""}${value}`}
                   />
+                  <ReferenceLine y={0} stroke="var(--color-border)" strokeDasharray="3 3" />
                   <Tooltip
                     contentStyle={tooltipStyle}
-                    formatter={(value) => [`${value} kcal`, "Calories"]}
+                    formatter={(value) => [
+                      `${Number(value) > 0 ? "+" : ""}${value} kcal`,
+                      "Over/Under",
+                    ]}
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="calories"
-                    stroke="var(--color-primary)"
-                    strokeWidth={3}
-                    dot={{ fill: "var(--color-primary)", strokeWidth: 0, r: 4 }}
-                    activeDot={{ r: 6, fill: "var(--color-primary)" }}
-                  />
-                </LineChart>
+                  <Bar dataKey="calorieDelta" radius={[6, 6, 6, 6]}>
+                    {chartData.map((entry) => (
+                      <Cell
+                        key={`cell-${entry.date}`}
+                        fill={
+                          entry.calorieDelta > 0
+                            ? "var(--color-destructive)"
+                            : "var(--color-primary)"
+                        }
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Bars show calories over (red) or under (green) your target.
+            </p>
           </TabsContent>
 
           <TabsContent value="steps" className="mt-4">
@@ -166,39 +192,30 @@ export function WeeklyTrendsCard({ data }: WeeklyTrendsCardProps) {
           </TabsContent>
 
           <TabsContent value="workouts" className="mt-4">
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <XAxis
-                    dataKey="displayDate"
-                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={30}
-                    allowDecimals={false}
-                  />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={(value) => [
-                      `${value} session${value !== 1 ? "s" : ""}`,
-                      "Workouts",
-                    ]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="workouts"
-                    stroke="var(--color-primary)"
-                    strokeWidth={3}
-                    dot={{ fill: "var(--color-primary)", strokeWidth: 0, r: 4 }}
-                    activeDot={{ r: 6, fill: "var(--color-primary)" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="grid grid-cols-7 gap-2">
+              {chartData.map((entry) => {
+                const hasWorkout = entry.workouts > 0;
+                return (
+                  <div
+                    key={entry.date}
+                    className="flex flex-col items-center gap-2 rounded-2xl border border-border/60 px-2 py-3"
+                  >
+                    <span className="text-xs text-muted-foreground">{entry.displayDate}</span>
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-full border ${
+                        hasWorkout
+                          ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+                          : "border-border/60 bg-muted/40 text-muted-foreground"
+                      }`}
+                    >
+                      {hasWorkout ? <Check className="h-4 w-4" /> : <span className="text-xs">—</span>}
+                    </div>
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {hasWorkout ? "Done" : "Rest"}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </TabsContent>
         </Tabs>
