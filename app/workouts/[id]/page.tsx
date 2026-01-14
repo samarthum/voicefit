@@ -131,7 +131,7 @@ export default function WorkoutDetailPage() {
     setQuickAddData({
       exerciseName,
       exerciseType: exerciseType as "resistance" | "cardio",
-      reps: null, // Don't pre-fill reps - user enters fresh
+      reps: lastSet.reps, // Pre-fill reps from last set
       weightKg: lastSet.weightKg, // Pre-fill weight from last set
       durationMinutes: lastSet.durationMinutes, // Pre-fill duration for cardio
       notes: null,
