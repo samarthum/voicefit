@@ -25,10 +25,10 @@ export async function POST(request: NextRequest) {
       return errorResponse("Audio file too large. Maximum size is 25MB.");
     }
 
-    // Transcribe using gpt-4o-transcribe
+    // Transcribe using gpt-4o-mini-transcribe
     const transcription = await openai.audio.transcriptions.create({
       file: audioFile,
-      model: "gpt-4o-transcribe",
+      model: "gpt-4o-mini-transcribe",
       response_format: "text",
     });
 
