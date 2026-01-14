@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Trash2 } from "lucide-react";
+import { MoreVertical, Trash2, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,20 +24,39 @@ interface ExerciseSetsGroupProps {
   exerciseName: string;
   sets: WorkoutSet[];
   onDeleteSet?: (id: string) => void;
+  onAddSet?: (exerciseName: string, exerciseType: string, lastSet: WorkoutSet) => void;
 }
 
 export function ExerciseSetsGroup({
   exerciseName,
   sets,
   onDeleteSet,
+  onAddSet,
 }: ExerciseSetsGroupProps) {
   const isCardio = sets.length > 0 && sets[0].exerciseType === "cardio";
+  const lastSet = sets[sets.length - 1];
+
+  const handleAddSet = () => {
+    if (onAddSet && lastSet) {
+      onAddSet(exerciseName, lastSet.exerciseType, lastSet);
+    }
+  };
 
   return (
     <div className="border rounded-lg overflow-hidden">
       {/* Exercise Header */}
-      <div className="bg-muted/50 px-4 py-3 border-b">
+      <div className="bg-muted/50 px-4 py-3 border-b flex items-center justify-between">
         <h3 className="font-semibold">{exerciseName}</h3>
+        {onAddSet && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={handleAddSet}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* Sets Table */}

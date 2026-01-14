@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import type { WorkoutSetInterpretation } from "@/lib/types";
+import { EXERCISES } from "@/lib/exercises";
 
 interface WorkoutSetInterpretationDialogProps {
   open: boolean;
@@ -47,6 +48,28 @@ export function WorkoutSetInterpretationDialog({
   const [weightKg, setWeightKg] = useState<string>(interpretation?.weightKg?.toString() ?? "");
   const [durationMinutes, setDurationMinutes] = useState<string>(interpretation?.durationMinutes?.toString() ?? "");
   const [notes, setNotes] = useState(interpretation?.notes ?? "");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Filter exercises based on input
+  const filteredExercises = useMemo(() => {
+    if (!exerciseName.trim()) return [];
+    const search = exerciseName.toLowerCase();
+    return EXERCISES.filter((e) =>
+      e.toLowerCase().includes(search)
+    ).slice(0, 6); // Limit to 6 suggestions
+  }, [exerciseName]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleSave = () => {
     const isValid = exerciseType === "cardio"
@@ -128,12 +151,36 @@ export function WorkoutSetInterpretationDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="exerciseName">Exercise</Label>
-                <Input
-                  id="exerciseName"
-                  value={exerciseName}
-                  onChange={(e) => setExerciseName(e.target.value)}
-                  placeholder={exerciseType === "cardio" ? "e.g., Running, Dancing, Walking" : "e.g., Squat, Bench Press"}
-                />
+                <div className="relative" ref={suggestionsRef}>
+                  <Input
+                    id="exerciseName"
+                    value={exerciseName}
+                    onChange={(e) => {
+                      setExerciseName(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    placeholder={exerciseType === "cardio" ? "e.g., Running, Dancing, Walking" : "e.g., Squat, Bench Press"}
+                    autoComplete="off"
+                  />
+                  {showSuggestions && filteredExercises.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 z-50 bg-popover border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
+                      {filteredExercises.map((exercise) => (
+                        <button
+                          key={exercise}
+                          type="button"
+                          onClick={() => {
+                            setExerciseName(exercise);
+                            setShowSuggestions(false);
+                          }}
+                          className="w-full px-3 py-2 text-left hover:bg-muted text-sm transition-colors"
+                        >
+                          {exercise}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {exerciseType === "resistance" ? (

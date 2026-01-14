@@ -9,9 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExerciseSetsGroup } from "@/components/exercise-sets-group";
 import { VoiceWorkoutLogger } from "@/components/voice-workout-logger";
+import { WorkoutSetInterpretationDialog } from "@/components/workout-set-interpretation-dialog";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { BottomNav } from "@/components/bottom-nav";
 import { ArrowLeft, Square, Loader2 } from "lucide-react";
+import type { WorkoutSetInterpretation } from "@/lib/types";
 import { toast, Toaster } from "sonner";
 
 interface WorkoutSet {
@@ -43,6 +45,8 @@ export default function WorkoutDetailPage() {
   const [isEnding, setIsEnding] = useState(false);
   const [deleteSetId, setDeleteSetId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [quickAddData, setQuickAddData] = useState<WorkoutSetInterpretation | null>(null);
+  const [isQuickAddSaving, setIsQuickAddSaving] = useState(false);
 
   const fetchSession = useCallback(async () => {
     try {
@@ -121,6 +125,59 @@ export default function WorkoutDetailPage() {
   };
 
   const isActive = session && !session.endedAt;
+
+  // Handle quick add set from "+" button
+  const handleQuickAddSet = (exerciseName: string, exerciseType: string, lastSet: WorkoutSet) => {
+    setQuickAddData({
+      exerciseName,
+      exerciseType: exerciseType as "resistance" | "cardio",
+      reps: null, // Don't pre-fill reps - user enters fresh
+      weightKg: lastSet.weightKg, // Pre-fill weight from last set
+      durationMinutes: lastSet.durationMinutes, // Pre-fill duration for cardio
+      notes: null,
+      confidence: 1, // Manual entry, full confidence
+      assumptions: [],
+    });
+  };
+
+  // Save quick add set
+  const handleQuickAddSave = async (setData: {
+    exerciseName: string;
+    exerciseType: "resistance" | "cardio";
+    reps: number | null;
+    weightKg: number | null;
+    durationMinutes: number | null;
+    notes: string | null;
+  }) => {
+    setIsQuickAddSaving(true);
+    try {
+      const response = await fetch("/api/workout-sets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          ...setData,
+          performedAt: new Date().toISOString(),
+          transcriptRaw: null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success("Set logged successfully!");
+        setQuickAddData(null);
+        fetchSession();
+      } else {
+        toast.error("Failed to save set");
+      }
+    } catch (error) {
+      console.error("Quick add error:", error);
+      toast.error("Failed to save set");
+    } finally {
+      setIsQuickAddSaving(false);
+    }
+  };
 
   // Group sets by exercise name
   const groupedSets = useMemo(() => {
@@ -218,6 +275,7 @@ export default function WorkoutDetailPage() {
                       exerciseName={group.exerciseName}
                       sets={group.sets}
                       onDeleteSet={isActive ? (id) => setDeleteSetId(id) : undefined}
+                      onAddSet={isActive ? handleQuickAddSet : undefined}
                     />
                   ))}
                 </div>
@@ -262,6 +320,17 @@ export default function WorkoutDetailPage() {
         onConfirm={handleDeleteSet}
         onCancel={() => setDeleteSetId(null)}
         isLoading={isDeleting}
+      />
+
+      {/* Quick Add Set Dialog */}
+      <WorkoutSetInterpretationDialog
+        key={quickAddData ? `quick-${quickAddData.exerciseName}` : "quick-empty"}
+        open={!!quickAddData}
+        onOpenChange={(open) => !open && setQuickAddData(null)}
+        interpretation={quickAddData}
+        isLoading={isQuickAddSaving}
+        onSave={handleQuickAddSave}
+        onCancel={() => setQuickAddData(null)}
       />
 
       <BottomNav />
