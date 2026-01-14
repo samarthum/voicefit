@@ -211,7 +211,10 @@ export default function DashboardPage() {
           {isLoading ? (
             <Skeleton className="h-[340px] w-full rounded-2xl" />
           ) : data ? (
-            <WeeklyTrendsCard data={data.weeklyTrends} />
+            <WeeklyTrendsCard
+              data={data.weeklyTrends}
+              calorieGoal={data.today.calories.goal}
+            />
           ) : null}
         </div>
       </main>
