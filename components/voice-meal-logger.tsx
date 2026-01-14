@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useVoiceRecorder } from "@/hooks/use-voice-recorder";
 import { MicRecordButton } from "@/components/mic-record-button";
 import { TranscriptEditorDialog } from "@/components/transcript-editor-dialog";
+import { TextInputDialog } from "@/components/text-input-dialog";
 import { MealInterpretationDialog } from "@/components/meal-interpretation-dialog";
 import type { MealInterpretation, RecordingState } from "@/lib/types";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
   const [transcript, setTranscript] = useState("");
   const [interpretation, setInterpretation] = useState<MealInterpretation | null>(null);
   const [currentTranscript, setCurrentTranscript] = useState("");
+  const [showTextInput, setShowTextInput] = useState(false);
   const processingRef = useRef(false);
 
   // Helper function to get file extension from MIME type
@@ -110,6 +112,34 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
     }
   };
 
+  // Handle text input submission (skip transcription, go directly to interpretation)
+  const handleTextInputSubmit = async (text: string) => {
+    setShowTextInput(false);
+    setCurrentTranscript(text);
+    setState("interpreting");
+
+    try {
+      const response = await fetch("/api/interpret/meal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript: text }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to interpret meal");
+      }
+
+      setInterpretation(data.data);
+      setState("reviewing");
+    } catch (error) {
+      console.error("Interpretation error:", error);
+      toast.error("Failed to analyze meal. Please try again.");
+      setState("idle");
+    }
+  };
+
   // Handle meal save
   const handleMealSave = async (mealData: {
     mealType: string;
@@ -151,6 +181,7 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
     setTranscript("");
     setInterpretation(null);
     setCurrentTranscript("");
+    setShowTextInput(false);
     resetRecorder();
   };
 
@@ -168,6 +199,37 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
         onStart={startRecording}
         onStop={stopRecording}
         disabled={state !== "idle" || isPreparing}
+        hideStatus
+      />
+
+      {/* Status / text input alternative */}
+      <div className="mt-4 text-sm text-muted-foreground">
+        {isPreparing ? (
+          <span>Preparing...</span>
+        ) : isRecording ? (
+          <span className="text-destructive font-medium tabular-nums">
+            {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, "0")}
+          </span>
+        ) : (
+          <button
+            onClick={() => setShowTextInput(true)}
+            className="text-muted-foreground/50 hover:text-muted-foreground transition-colors text-xs"
+          >
+            type instead
+          </button>
+        )}
+      </div>
+
+      <TextInputDialog
+        open={showTextInput}
+        onOpenChange={setShowTextInput}
+        onSubmit={handleTextInputSubmit}
+        onCancel={() => setShowTextInput(false)}
+        title="Log Meal"
+        description="Describe what you ate in natural language."
+        placeholder="e.g., I had a chicken sandwich and a coffee for lunch"
+        submitLabel="Continue"
+        isLoading={state === "interpreting"}
       />
 
       <TranscriptEditorDialog

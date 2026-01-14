@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useVoiceRecorder } from "@/hooks/use-voice-recorder";
 import { MicRecordButton } from "@/components/mic-record-button";
 import { TranscriptEditorDialog } from "@/components/transcript-editor-dialog";
+import { TextInputDialog } from "@/components/text-input-dialog";
 import { WorkoutSetInterpretationDialog } from "@/components/workout-set-interpretation-dialog";
 import type { WorkoutSetInterpretation, RecordingState } from "@/lib/types";
 import { toast } from "sonner";
@@ -30,6 +31,7 @@ export function VoiceWorkoutLogger({ sessionId, onSetSaved }: VoiceWorkoutLogger
   const [transcript, setTranscript] = useState("");
   const [interpretation, setInterpretation] = useState<WorkoutSetInterpretation | null>(null);
   const [currentTranscript, setCurrentTranscript] = useState("");
+  const [showTextInput, setShowTextInput] = useState(false);
   const processingRef = useRef(false);
 
   // Helper function to get file extension from MIME type
@@ -111,6 +113,34 @@ export function VoiceWorkoutLogger({ sessionId, onSetSaved }: VoiceWorkoutLogger
     }
   };
 
+  // Handle text input submission (skip transcription, go directly to interpretation)
+  const handleTextInputSubmit = async (text: string) => {
+    setShowTextInput(false);
+    setCurrentTranscript(text);
+    setState("interpreting");
+
+    try {
+      const response = await fetch("/api/interpret/workout-set", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript: text }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to interpret workout set");
+      }
+
+      setInterpretation(data.data);
+      setState("reviewing");
+    } catch (error) {
+      console.error("Interpretation error:", error);
+      toast.error("Failed to analyze set. Please try again.");
+      setState("idle");
+    }
+  };
+
   // Handle set save
   const handleSetSave = async (setData: {
     exerciseName: string;
@@ -156,6 +186,7 @@ export function VoiceWorkoutLogger({ sessionId, onSetSaved }: VoiceWorkoutLogger
     setTranscript("");
     setInterpretation(null);
     setCurrentTranscript("");
+    setShowTextInput(false);
     resetRecorder();
   };
 
@@ -173,6 +204,37 @@ export function VoiceWorkoutLogger({ sessionId, onSetSaved }: VoiceWorkoutLogger
         onStart={startRecording}
         onStop={stopRecording}
         disabled={state !== "idle" || isPreparing}
+        hideStatus
+      />
+
+      {/* Status / text input alternative */}
+      <div className="mt-4 text-sm text-muted-foreground">
+        {isPreparing ? (
+          <span>Preparing...</span>
+        ) : isRecording ? (
+          <span className="text-destructive font-medium tabular-nums">
+            {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, "0")}
+          </span>
+        ) : (
+          <button
+            onClick={() => setShowTextInput(true)}
+            className="text-muted-foreground/50 hover:text-muted-foreground transition-colors text-xs"
+          >
+            type instead
+          </button>
+        )}
+      </div>
+
+      <TextInputDialog
+        open={showTextInput}
+        onOpenChange={setShowTextInput}
+        onSubmit={handleTextInputSubmit}
+        onCancel={() => setShowTextInput(false)}
+        title="Log Set"
+        description="Describe your exercise set in natural language."
+        placeholder="e.g., bench press 3 sets of 10 at 135 pounds"
+        submitLabel="Continue"
+        isLoading={state === "interpreting"}
       />
 
       <TranscriptEditorDialog

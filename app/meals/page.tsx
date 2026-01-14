@@ -114,7 +114,7 @@ export default function MealsPage() {
               </SheetHeader>
               <div className="flex flex-col items-center justify-center py-8">
                 <VoiceMealLogger onMealSaved={handleMealSaved} />
-                <p className="text-sm text-muted-foreground mt-4 text-center">
+                <p className="text-sm text-muted-foreground mt-6 text-center">
                   Tap the button and describe your meal
                 </p>
               </div>

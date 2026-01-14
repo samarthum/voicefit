@@ -13,6 +13,7 @@ interface MicRecordButtonProps {
   onStop: () => void;
   disabled?: boolean;
   className?: string;
+  hideStatus?: boolean;
 }
 
 export function MicRecordButton({
@@ -23,6 +24,7 @@ export function MicRecordButton({
   onStop,
   disabled = false,
   className,
+  hideStatus = false,
 }: MicRecordButtonProps) {
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -99,18 +101,20 @@ export function MicRecordButton({
       </div>
 
       {/* Status text */}
-      <p
-        className={cn(
-          "text-sm font-medium transition-all duration-300",
-          isRecording ? "text-destructive" : "text-muted-foreground"
-        )}
-      >
-        {isPreparing
-          ? "Preparing..."
-          : isRecording
-          ? formatDuration(duration)
-          : "Tap to record"}
-      </p>
+      {!hideStatus && (
+        <p
+          className={cn(
+            "text-sm font-medium transition-all duration-300",
+            isRecording ? "text-destructive" : "text-muted-foreground"
+          )}
+        >
+          {isPreparing
+            ? "Preparing..."
+            : isRecording
+            ? formatDuration(duration)
+            : "Tap to record"}
+        </p>
+      )}
     </div>
   );
 }
