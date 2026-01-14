@@ -44,6 +44,13 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
     ...chartData.map((d) => Math.abs(d.calorieDelta))
   );
   const calorieDomain = [-maxDelta * 1.1, maxDelta * 1.1] as [number, number];
+  const calorieTicks = [
+    -maxDelta,
+    -Math.round(maxDelta / 2),
+    0,
+    Math.round(maxDelta / 2),
+    maxDelta,
+  ];
 
   const tooltipStyle = {
     backgroundColor: "var(--color-card)",
@@ -86,15 +93,22 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
                     axisLine={false}
                     width={50}
                     domain={calorieDomain}
-                    tickFormatter={(value) => `${value > 0 ? "+" : ""}${value}`}
+                    ticks={calorieTicks}
+                    tickFormatter={(value) =>
+                      `${value > 0 ? "+" : ""}${value.toLocaleString()}`
+                    }
                   />
                   <ReferenceLine y={0} stroke="var(--color-border)" strokeDasharray="3 3" />
                   <Tooltip
                     contentStyle={tooltipStyle}
-                    formatter={(value) => [
-                      `${Number(value) > 0 ? "+" : ""}${value} kcal`,
-                      "Over/Under",
-                    ]}
+                    formatter={(value) => {
+                      const numericValue = Number(value);
+                      const label = numericValue > 0 ? "Over target" : "Under target";
+                      return [
+                        `${numericValue > 0 ? "+" : ""}${numericValue} kcal`,
+                        label,
+                      ];
+                    }}
                   />
                   <Bar dataKey="calorieDelta" radius={[6, 6, 6, 6]}>
                     {chartData.map((entry) => (
@@ -103,7 +117,7 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
                         fill={
                           entry.calorieDelta > 0
                             ? "var(--color-destructive)"
-                            : "var(--color-primary)"
+                            : "var(--color-success)"
                         }
                       />
                     ))}
