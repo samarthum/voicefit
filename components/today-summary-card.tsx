@@ -1,9 +1,9 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { RadialProgress } from "@/components/ui/radial-progress";
 import { Button } from "@/components/ui/button";
-import { Utensils, Footprints, Scale, Dumbbell, ChevronLeft, ChevronRight } from "lucide-react";
+import { Scale, Dumbbell, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TodaySummaryCardProps {
   dateLabel?: string;
@@ -34,10 +34,13 @@ export function TodaySummaryCard({
   onNextDay,
   isToday = true,
 }: TodaySummaryCardProps) {
+  // Calculate remaining calories (goal - consumed)
+  const caloriesRemaining = Math.max(calories.goal - calories.consumed, 0);
   const calorieProgress = Math.min((calories.consumed / calories.goal) * 100, 100);
-  const stepProgress = steps.count
-    ? Math.min((steps.count / steps.goal) * 100, 100)
-    : 0;
+
+  // Calculate step progress (completed / goal)
+  const stepsCompleted = steps.count ?? 0;
+  const stepProgress = Math.min((stepsCompleted / steps.goal) * 100, 100);
 
   return (
     <Card className="relative overflow-hidden">
@@ -73,39 +76,45 @@ export function TodaySummaryCard({
       </CardHeader>
 
       <CardContent className="space-y-5 relative">
-        {/* Calories */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10">
-                <Utensils className="h-4 w-4 text-primary" />
-              </div>
-              <span className="text-sm font-semibold">Calories</span>
-            </div>
-            <span className="text-sm text-muted-foreground tabular-nums">
-              {calories.consumed.toLocaleString()} / {calories.goal.toLocaleString()} kcal
-            </span>
+        {/* Radial Progress Section - Two columns */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Calories - Remaining */}
+          <div className="flex flex-col items-center">
+            <RadialProgress
+              value={calorieProgress}
+              size={130}
+              strokeWidth={10}
+              indicatorClassName="stroke-primary"
+            >
+              <span className="text-xs text-muted-foreground">Remaining</span>
+              <span className="text-2xl font-bold tabular-nums">
+                {caloriesRemaining.toLocaleString()}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Goal {calories.goal.toLocaleString()} kcal
+              </span>
+            </RadialProgress>
+            <span className="mt-2 text-sm font-medium text-muted-foreground">Calories</span>
           </div>
-          <Progress value={calorieProgress} />
-        </div>
 
-        {/* Steps */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-secondary">
-                <Footprints className="h-4 w-4 text-secondary-foreground" />
-              </div>
-              <span className="text-sm font-semibold">Steps</span>
-            </div>
-            <span className="text-sm text-muted-foreground tabular-nums">
-              {steps.count?.toLocaleString() ?? "---"} / {steps.goal.toLocaleString()}
-            </span>
+          {/* Steps - Completed */}
+          <div className="flex flex-col items-center">
+            <RadialProgress
+              value={stepProgress}
+              size={130}
+              strokeWidth={10}
+              indicatorClassName="stroke-secondary-foreground"
+            >
+              <span className="text-xs text-muted-foreground">Completed</span>
+              <span className="text-2xl font-bold tabular-nums">
+                {stepsCompleted.toLocaleString()}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Goal {steps.goal.toLocaleString()}
+              </span>
+            </RadialProgress>
+            <span className="mt-2 text-sm font-medium text-muted-foreground">Steps</span>
           </div>
-          <Progress
-            value={stepProgress}
-            className="[&>div]:bg-gradient-to-r [&>div]:from-secondary-foreground/80 [&>div]:to-secondary-foreground/60"
-          />
         </div>
 
         {/* Weight and Workouts */}
