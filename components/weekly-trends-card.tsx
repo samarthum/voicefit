@@ -33,7 +33,10 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
     return date.toLocaleDateString("en-US", { weekday: "short" });
   };
 
-  const chartData = data.map((d) => ({
+  const todayKey = new Date().toLocaleDateString("en-CA");
+  const filteredData = data.filter((d) => d.date !== todayKey);
+
+  const chartData = filteredData.map((d) => ({
     ...d,
     displayDate: formatDate(d.date),
     calorieDelta: d.calories - calorieGoal,
