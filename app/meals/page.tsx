@@ -8,7 +8,8 @@ import { MealCard } from "@/components/meal-card";
 import { VoiceMealLogger } from "@/components/voice-meal-logger";
 import { BottomNav } from "@/components/bottom-nav";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
-import { Plus, Utensils } from "lucide-react";
+import { Plus, Utensils, Calendar, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -159,12 +160,11 @@ export default function MealsPage() {
       </header>
 
       <main className="container max-w-lg mx-auto px-4 py-6 space-y-4">
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-foreground" htmlFor="meal-date">
-            Filter by date
-          </label>
-          <div className="flex items-center gap-2">
-            <input
+        {/* Date Filter */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
               id="meal-date"
               type="date"
               value={selectedDate}
@@ -172,21 +172,21 @@ export default function MealsPage() {
                 setSelectedDate(event.target.value);
                 setPage(1);
               }}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground"
+              className="pl-10 pr-10"
             />
-            {selectedDate ? (
-              <Button
+            {selectedDate && (
+              <button
                 type="button"
-                variant="ghost"
-                className="text-muted-foreground"
                 onClick={() => {
                   setSelectedDate("");
                   setPage(1);
                 }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Clear date filter"
               >
-                Clear
-              </Button>
-            ) : null}
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
         {/* Add Meal Button */}
