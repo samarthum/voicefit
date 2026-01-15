@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,14 +33,33 @@ export default function MealsPage() {
   const [mealSheetOpen, setMealSheetOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalMeals, setTotalMeals] = useState(0);
+  const [selectedDate, setSelectedDate] = useState("");
+  const pageSize = 10;
 
   const fetchMeals = useCallback(async () => {
     try {
-      const response = await fetch("/api/meals?limit=50");
+      setIsLoading(true);
+      const offset = (page - 1) * pageSize;
+      const params = new URLSearchParams({
+        limit: pageSize.toString(),
+        offset: offset.toString(),
+      });
+      if (selectedDate) {
+        params.set("date", selectedDate);
+      }
+      const response = await fetch(`/api/meals?${params.toString()}`);
       const result = await response.json();
 
       if (result.success) {
-        setMeals(result.data.meals);
+        const { meals: fetchedMeals, total } = result.data;
+        if (page > 1 && offset >= total) {
+          setPage(page - 1);
+          return;
+        }
+        setMeals(fetchedMeals);
+        setTotalMeals(total);
       } else {
         toast.error("Failed to load meals");
       }
@@ -50,7 +69,7 @@ export default function MealsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page, pageSize, selectedDate]);
 
   useEffect(() => {
     fetchMeals();
@@ -58,7 +77,11 @@ export default function MealsPage() {
 
   const handleMealSaved = () => {
     setMealSheetOpen(false);
-    fetchMeals();
+    if (page === 1) {
+      fetchMeals();
+    } else {
+      setPage(1);
+    }
   };
 
   const handleDelete = async () => {
@@ -73,7 +96,11 @@ export default function MealsPage() {
 
       if (result.success) {
         toast.success("Meal deleted");
-        setMeals((prev) => prev.filter((m) => m.id !== deleteId));
+        if (meals.length === 1 && page > 1) {
+          setPage(page - 1);
+        } else {
+          fetchMeals();
+        }
       } else {
         toast.error("Failed to delete meal");
       }
@@ -85,6 +112,39 @@ export default function MealsPage() {
       setDeleteId(null);
     }
   };
+
+  const groupedMeals = useMemo(() => {
+    const groups = new Map<
+      string,
+      {
+        label: string;
+        meals: Meal[];
+      }
+    >();
+
+    meals.forEach((meal) => {
+      const date = new Date(meal.eatenAt);
+      const key = date.toDateString();
+      const label = date.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+
+      if (!groups.has(key)) {
+        groups.set(key, { label, meals: [] });
+      }
+
+      groups.get(key)?.meals.push(meal);
+    });
+
+    return Array.from(groups.values());
+  }, [meals]);
+
+  const totalPages = Math.ceil(totalMeals / pageSize);
+  const canGoBack = page > 1;
+  const canGoForward = page < totalPages;
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -99,6 +159,36 @@ export default function MealsPage() {
       </header>
 
       <main className="container max-w-lg mx-auto px-4 py-6 space-y-4">
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-foreground" htmlFor="meal-date">
+            Filter by date
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              id="meal-date"
+              type="date"
+              value={selectedDate}
+              onChange={(event) => {
+                setSelectedDate(event.target.value);
+                setPage(1);
+              }}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground"
+            />
+            {selectedDate ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-muted-foreground"
+                onClick={() => {
+                  setSelectedDate("");
+                  setPage(1);
+                }}
+              >
+                Clear
+              </Button>
+            ) : null}
+          </div>
+        </div>
         {/* Add Meal Button */}
         <div className="animate-fade-up">
           <Sheet open={mealSheetOpen} onOpenChange={setMealSheetOpen}>
@@ -140,20 +230,56 @@ export default function MealsPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3 stagger-children">
-            {meals.map((meal) => (
-              <MealCard
-                key={meal.id}
-                id={meal.id}
-                description={meal.description}
-                calories={meal.calories}
-                mealType={meal.mealType}
-                eatenAt={meal.eatenAt}
-                onDelete={(id) => setDeleteId(id)}
-              />
+          <div className="space-y-6">
+            {groupedMeals.map((group) => (
+              <section key={group.label} className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-foreground">{group.label}</h2>
+                  <span className="text-xs text-muted-foreground">
+                    {group.meals.length} meal{group.meals.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <div className="space-y-3 stagger-children">
+                  {group.meals.map((meal) => (
+                    <MealCard
+                      key={meal.id}
+                      id={meal.id}
+                      description={meal.description}
+                      calories={meal.calories}
+                      mealType={meal.mealType}
+                      eatenAt={meal.eatenAt}
+                      onDelete={(id) => setDeleteId(id)}
+                    />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}
+
+        {!isLoading && meals.length > 0 ? (
+          <div className="flex items-center justify-between pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              disabled={!canGoBack}
+            >
+              Previous
+            </Button>
+            <div className="text-xs text-muted-foreground">
+              Page {page} of {Math.max(totalPages, 1)} · {totalMeals} meals
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPage((prev) => prev + 1)}
+              disabled={!canGoForward}
+            >
+              Next
+            </Button>
+          </div>
+        ) : null}
       </main>
 
       <DeleteConfirmDialog
