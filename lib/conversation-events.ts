@@ -1,5 +1,6 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import type { ConversationEventKind, ConversationSource } from "@/lib/types";
 
@@ -24,7 +25,7 @@ export async function createConversationEvent(input: ConversationEventCreateInpu
       source: input.source,
       referenceType: input.referenceType ?? null,
       referenceId: input.referenceId ?? null,
-      metadata: input.metadata ?? null,
+      ...(input.metadata ? { metadata: input.metadata as Prisma.InputJsonValue } : {}),
     },
   });
 }
@@ -41,7 +42,7 @@ export async function createConversationEvents(inputs: ConversationEventCreateIn
       source: input.source,
       referenceType: input.referenceType ?? null,
       referenceId: input.referenceId ?? null,
-      metadata: input.metadata ?? null,
+      ...(input.metadata ? { metadata: input.metadata as Prisma.InputJsonValue } : {}),
     })),
   });
 }

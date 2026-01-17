@@ -188,12 +188,12 @@ const groupWorkoutSessions = (events: ConversationFeedEvent[]): ConversationFeed
 
     return {
       id: `session-${session.sessionId}-${session.sessionDate}`,
-      kind: "workout_set",
+      kind: "workout_set" as const,
       userText: "Workout session",
       systemText: `${setCount} set${setCount === 1 ? "" : "s"} · ${exerciseCount} exercise${
         exerciseCount === 1 ? "" : "s"
       }`,
-      source: "system",
+      source: "system" as const,
       referenceType: "workout_session",
       referenceId: session.sessionId,
       metadata: {

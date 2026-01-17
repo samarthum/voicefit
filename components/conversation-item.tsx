@@ -64,15 +64,15 @@ const getMetadataObject = (metadata: ConversationFeedEvent["metadata"]) => {
 const parseSessionSets = (metadata: Record<string, unknown>): WorkoutSessionSet[] => {
   if (!Array.isArray(metadata.sessionSets)) return [];
 
-  return metadata.sessionSets
-    .map((set) => {
-      if (!set || typeof set !== "object" || Array.isArray(set)) return null;
-      const record = set as Record<string, unknown>;
-      const exerciseName =
-        typeof record.exerciseName === "string" ? record.exerciseName : null;
-      if (!exerciseName) return null;
+  return metadata.sessionSets.flatMap((set): WorkoutSessionSet[] => {
+    if (!set || typeof set !== "object" || Array.isArray(set)) return [];
+    const record = set as Record<string, unknown>;
+    const exerciseName =
+      typeof record.exerciseName === "string" ? record.exerciseName : null;
+    if (!exerciseName) return [];
 
-      return {
+    return [
+      {
         id: typeof record.id === "string" ? record.id : undefined,
         exerciseName,
         exerciseType: typeof record.exerciseType === "string" ? record.exerciseType : undefined,
@@ -82,9 +82,9 @@ const parseSessionSets = (metadata: Record<string, unknown>): WorkoutSessionSet[
           typeof record.durationMinutes === "number" ? record.durationMinutes : null,
         notes: typeof record.notes === "string" ? record.notes : null,
         performedAt: typeof record.performedAt === "string" ? record.performedAt : undefined,
-      } satisfies WorkoutSessionSet;
-    })
-    .filter((set): set is WorkoutSessionSet => Boolean(set));
+      },
+    ];
+  });
 };
 
 const formatSetTime = (value?: string) => {

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
   getCurrentUser,
@@ -17,10 +18,13 @@ const parseDateString = (value: string) => {
 };
 
 const getEventDate = (
-  event: { metadata: Record<string, unknown> | null; createdAt: Date },
+  event: { metadata: unknown; createdAt: Date },
   timezone?: string
 ) => {
-  const metadata = event.metadata ?? {};
+  const metadata =
+    event.metadata && typeof event.metadata === "object" && !Array.isArray(event.metadata)
+      ? (event.metadata as Record<string, unknown>)
+      : {};
   const metadataDate = typeof metadata.date === "string" ? metadata.date : null;
   if (metadataDate) return metadataDate;
 
@@ -227,10 +231,12 @@ export async function POST(request: NextRequest) {
       return errorResponse(parseResult.error.issues[0].message);
     }
 
+    const { metadata, ...rest } = parseResult.data;
     const event = await prisma.conversationEvent.create({
       data: {
         userId: user.id,
-        ...parseResult.data,
+        ...rest,
+        ...(metadata ? { metadata: metadata as Prisma.InputJsonValue } : {}),
       },
     });
 

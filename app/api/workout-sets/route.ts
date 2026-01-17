@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
           sessionId: session.id,
           sessionTitle: session.title,
           sessionStartedAt: session.startedAt.toISOString(),
-          sessionEndedAt: session.endedAt ? session.endedAt.toISOString() : null,
+          sessionEndedAt: null,
         },
       });
     } catch (error) {
