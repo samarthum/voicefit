@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Mic, Send, Square, ChevronUp, ChevronDown, Sparkles } from "lucide-react";
+import { Mic, Send, Square, ChevronDown, Sparkles, UtensilsCrossed, Dumbbell, Footprints, Scale } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useVoiceRecorder } from "@/hooks/use-voice-recorder";
@@ -28,11 +28,10 @@ interface ConversationInputProps {
 }
 
 const suggestions = [
-  { label: "Breakfast", icon: "🍳", value: "Breakfast: " },
-  { label: "Lunch", icon: "🥗", value: "Lunch: " },
-  { label: "Workout", icon: "💪", value: "Did 3 sets of squats, 8 reps at 60 kg" },
-  { label: "Steps", icon: "👟", value: "Steps 8500" },
-  { label: "Weight", icon: "⚖️", value: "Weight 72 kg" },
+  { label: "Meal", icon: UtensilsCrossed, value: "Had " },
+  { label: "Workout", icon: Dumbbell, value: "Did 3 sets of squats, 8 reps at 60 kg" },
+  { label: "Steps", icon: Footprints, value: "Steps 8500" },
+  { label: "Weight", icon: Scale, value: "Weight 72 kg" },
 ];
 
 const buildWorkoutSystemText = (setData: {
@@ -692,7 +691,7 @@ export function ConversationInput({
                       isBusy && "opacity-50 cursor-not-allowed"
                     )}
                   >
-                    <span className="text-base">{suggestion.icon}</span>
+                    <suggestion.icon className="w-4 h-4" />
                     <span>{suggestion.label}</span>
                   </button>
                 ))}
