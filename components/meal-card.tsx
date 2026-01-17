@@ -61,24 +61,27 @@ export function MealCard({
 
   return (
     <Card className="border-border/60 bg-card/70 transition-all duration-200 hover:shadow-xl hover:shadow-black/30">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
+      <CardContent className="p-3">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant={getMealTypeBadgeVariant(mealType)}>
+            <div className="flex items-center gap-2">
+              <Badge variant={getMealTypeBadgeVariant(mealType)} className="text-[10px] px-2 py-0.5">
                 {mealType}
               </Badge>
-              <span className="text-sm text-muted-foreground">
-                {dateStr} · {time}
-              </span>
+              <p className="text-sm font-medium truncate flex-1">{description}</p>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-base font-semibold tabular-nums text-orange-300">
+                  {calories}
+                </span>
+                <span className="text-xs text-muted-foreground">kcal</span>
+              </div>
             </div>
-            <p className="text-sm font-medium truncate mb-1">{description}</p>
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-semibold tabular-nums text-orange-300">
-                {calories}
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-muted-foreground">
+                {time}
               </span>
-              <span className="text-sm text-muted-foreground">kcal</span>
-              <span className="text-xs text-muted-foreground/70 ml-auto">
+              <span className="text-xs text-muted-foreground/50">·</span>
+              <span className="text-xs text-muted-foreground/70">
                 {timeAgo}
               </span>
             </div>
@@ -87,8 +90,8 @@ export function MealCard({
           {(onEdit || onDelete) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-sm" className="shrink-0">
-                  <MoreVertical className="h-4 w-4" />
+                <Button variant="ghost" size="icon-sm" className="shrink-0 h-7 w-7">
+                  <MoreVertical className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
