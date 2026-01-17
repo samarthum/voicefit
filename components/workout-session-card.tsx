@@ -54,7 +54,7 @@ export function WorkoutSessionCard({
   const duration = getDuration();
 
   return (
-    <Card>
+    <Card className="border-border/60 bg-card/70 transition-all duration-200 hover:shadow-xl hover:shadow-black/30">
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-2">
           <Link href={`/workouts/${id}`} className="flex-1 min-w-0">
@@ -62,7 +62,10 @@ export function WorkoutSessionCard({
               <span className="text-sm text-muted-foreground">{dateStr}</span>
               <span className="text-sm text-muted-foreground">{time}</span>
               {!endedAt && (
-                <Badge variant="secondary" className="bg-green-500/10 text-green-600 dark:text-green-400">
+                <Badge
+                  variant="secondary"
+                  className="border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                >
                   Active
                 </Badge>
               )}

@@ -8,7 +8,7 @@ import { MealCard } from "@/components/meal-card";
 import { VoiceMealLogger } from "@/components/voice-meal-logger";
 import { BottomNav } from "@/components/bottom-nav";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
-import { Plus, Utensils, Calendar, X } from "lucide-react";
+import { Plus, Utensils, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Sheet,
@@ -28,6 +28,22 @@ interface Meal {
   transcriptRaw: string | null;
 }
 
+function formatDateLabel(dateString: string): string {
+  const today = new Date().toLocaleDateString("en-CA");
+  if (dateString === today) return "Today";
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (dateString === yesterday.toLocaleDateString("en-CA")) return "Yesterday";
+
+  const date = new Date(dateString + "T12:00:00");
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function MealsPage() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +52,9 @@ export default function MealsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [page, setPage] = useState(1);
   const [totalMeals, setTotalMeals] = useState(0);
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState(() => {
+    return new Date().toLocaleDateString("en-CA");
+  });
   const pageSize = 10;
 
   const fetchMeals = useCallback(async () => {
@@ -148,11 +166,11 @@ export default function MealsPage() {
   const canGoForward = page < totalPages;
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-28">
       <Toaster />
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-gradient-to-b from-background via-background to-background/80 backdrop-blur-sm border-b border-border/50">
+      <header className="sticky top-0 z-40 bg-gradient-to-b from-background/90 via-background/80 to-background/70 backdrop-blur-sm border-b border-border/60">
         <div className="flex h-16 items-center justify-between px-4 max-w-lg mx-auto">
           <h1 className="text-lg font-display text-foreground">Meal Logs</h1>
           <UserButton afterSignOutUrl="/" />
@@ -160,40 +178,70 @@ export default function MealsPage() {
       </header>
 
       <main className="container max-w-lg mx-auto px-4 py-6 space-y-4">
-        {/* Date Filter */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1">
-            <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              id="meal-date"
-              type="date"
-              value={selectedDate}
-              onChange={(event) => {
-                setSelectedDate(event.target.value);
-                setPage(1);
-              }}
-              className="pl-10 pr-10"
-            />
-            {selectedDate && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedDate("");
-                  setPage(1);
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Clear date filter"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+        {/* Date Navigation */}
+        <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-card/70 p-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            onClick={() => {
+              const current = new Date(selectedDate + "T12:00:00");
+              current.setDate(current.getDate() - 1);
+              setSelectedDate(current.toLocaleDateString("en-CA"));
+              setPage(1);
+            }}
+            aria-label="Previous day"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const input = document.getElementById("meal-date-picker") as HTMLInputElement;
+              input?.showPicker?.();
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-muted/50 transition-colors"
+          >
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">{formatDateLabel(selectedDate)}</span>
+          </button>
+          <input
+            id="meal-date-picker"
+            type="date"
+            value={selectedDate}
+            onChange={(event) => {
+              setSelectedDate(event.target.value);
+              setPage(1);
+            }}
+            className="sr-only"
+          />
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            onClick={() => {
+              const current = new Date(selectedDate + "T12:00:00");
+              current.setDate(current.getDate() + 1);
+              setSelectedDate(current.toLocaleDateString("en-CA"));
+              setPage(1);
+            }}
+            disabled={selectedDate === new Date().toLocaleDateString("en-CA")}
+            aria-label="Next day"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
         {/* Add Meal Button */}
         <div className="animate-fade-up">
           <Sheet open={mealSheetOpen} onOpenChange={setMealSheetOpen}>
             <SheetTrigger asChild>
-              <Button className="w-full" size="lg">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full border-border/60 bg-card/70 text-foreground hover:bg-card"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Log Meal
               </Button>

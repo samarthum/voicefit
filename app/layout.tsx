@@ -1,18 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Serif_Display, Source_Sans_3, JetBrains_Mono } from "next/font/google";
+import { DM_Sans, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const dmSerifDisplay = DM_Serif_Display({
-  variable: "--font-display",
-  weight: "400",
-  subsets: ["latin"],
-});
-
-const sourceSans = Source_Sans_3({
+const dmSans = DM_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-display",
+  weight: ["400"],
+  style: ["normal", "italic"],
+  subsets: ["latin"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -39,11 +41,13 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" className="dark" suppressHydrationWarning>
         <body
-          className={`${sourceSans.variable} ${dmSerifDisplay.variable} ${jetbrainsMono.variable} antialiased font-sans`}
+          className={`${dmSans.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} antialiased font-sans`}
         >
-          {children}
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+            {children}
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

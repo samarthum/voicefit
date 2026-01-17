@@ -47,8 +47,8 @@ export default function NewWorkoutPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
+      <div className="min-h-screen gradient-mesh flex items-center justify-center px-4">
+        <div className="text-center space-y-4 rounded-3xl border border-border/60 bg-card/70 p-6 shadow-xl">
           <p className="text-destructive">{error}</p>
           <button
             onClick={() => router.push("/workouts")}
@@ -62,8 +62,8 @@ export default function NewWorkoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
+    <div className="min-h-screen gradient-mesh flex items-center justify-center px-4">
+      <div className="flex flex-col items-center gap-4 rounded-3xl border border-border/60 bg-card/70 p-6 shadow-xl">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         <p className="text-muted-foreground">Starting workout...</p>
       </div>

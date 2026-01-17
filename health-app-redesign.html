@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VoiceFit — Health Tracking Redesign</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #141416;
+            --bg-card: #1a1a1d;
+            --bg-elevated: #222226;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent-green: #22c55e;
+            --accent-green-dim: rgba(34, 197, 94, 0.15);
+            --accent-orange: #f97316;
+            --accent-orange-dim: rgba(249, 115, 22, 0.15);
+            --accent-blue: #3b82f6;
+            --accent-blue-dim: rgba(59, 130, 246, 0.15);
+            --accent-purple: #a855f7;
+            --accent-purple-dim: rgba(168, 85, 247, 0.15);
+            --border: rgba(255, 255, 255, 0.06);
+            --border-light: rgba(255, 255, 255, 0.1);
+            --glow-green: 0 0 40px rgba(34, 197, 94, 0.3);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+            --radius-full: 9999px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container {
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            background: var(--bg-primary);
+        }
+
+        /* Ambient background glow */
+        .ambient-glow {
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Header */
+        .header {
+            padding: 20px 24px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .greeting {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .greeting-time {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .greeting-name {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 28px;
+            font-weight: 400;
+            font-style: italic;
+            color: var(--text-primary);
+        }
+
+        .profile-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-full);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .profile-btn:hover {
+            background: var(--bg-card);
+            border-color: var(--border-light);
+        }
+
+        .profile-btn svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-secondary);
+        }
+
+        /* Today's Summary */
+        .summary-section {
+            padding: 0 24px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 18px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--border-light);
+            transform: translateY(-2px);
+        }
+
+        .stat-card.primary {
+            grid-column: span 2;
+            background: linear-gradient(135deg, var(--bg-card) 0%, rgba(249, 115, 22, 0.05) 100%);
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .stat-icon.calories { background: var(--accent-orange-dim); }
+        .stat-icon.calories svg { color: var(--accent-orange); }
+        .stat-icon.steps { background: var(--accent-green-dim); }
+        .stat-icon.steps svg { color: var(--accent-green); }
+        .stat-icon.weight { background: var(--accent-blue-dim); }
+        .stat-icon.weight svg { color: var(--accent-blue); }
+        .stat-icon.workout { background: var(--accent-purple-dim); }
+        .stat-icon.workout svg { color: var(--accent-purple); }
+
+        .stat-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .stat-value .unit {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        .stat-progress {
+            margin-top: 10px;
+            height: 4px;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+        }
+
+        .stat-progress-bar {
+            height: 100%;
+            border-radius: var(--radius-full);
+            transition: width 0.6s ease;
+        }
+
+        .stat-progress-bar.orange { background: var(--accent-orange); }
+        .stat-progress-bar.green { background: var(--accent-green); }
+
+        .stat-goal {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* Primary stat card layout */
+        .stat-card.primary .stat-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .stat-card.primary .stat-main {
+            flex: 1;
+        }
+
+        .stat-card.primary .stat-visual {
+            width: 80px;
+            height: 80px;
+            position: relative;
+        }
+
+        .circular-progress {
+            transform: rotate(-90deg);
+        }
+
+        .circular-progress circle {
+            fill: none;
+            stroke-width: 6;
+        }
+
+        .circular-progress .bg {
+            stroke: var(--bg-elevated);
+        }
+
+        .circular-progress .progress {
+            stroke: var(--accent-orange);
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.6s ease;
+        }
+
+        /* Today's Log Section */
+        .log-section {
+            padding: 0 24px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section-action {
+            font-size: 13px;
+            color: var(--accent-green);
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .section-action:hover {
+            opacity: 0.8;
+        }
+
+        .log-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .log-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+        }
+
+        .log-item:hover {
+            border-color: var(--border-light);
+        }
+
+        .log-item-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .log-item-icon.meal { background: var(--accent-orange-dim); }
+        .log-item-icon.meal svg { color: var(--accent-orange); }
+        .log-item-icon.activity { background: var(--accent-green-dim); }
+        .log-item-icon.activity svg { color: var(--accent-green); }
+        .log-item-icon.weight { background: var(--accent-blue-dim); }
+        .log-item-icon.weight svg { color: var(--accent-blue); }
+
+        .log-item-icon svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .log-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .log-item-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .log-item-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .log-item-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        /* Trends Section */
+        .trends-section {
+            padding: 0 24px 200px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .trends-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .trend-tab {
+            padding: 8px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .trend-tab:hover {
+            border-color: var(--border-light);
+        }
+
+        .trend-tab.active {
+            background: var(--accent-green-dim);
+            border-color: rgba(34, 197, 94, 0.3);
+            color: var(--accent-green);
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 12px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .chart-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .chart-value {
+            text-align: right;
+        }
+
+        .chart-value-main {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chart-value-change {
+            font-size: 12px;
+            color: var(--accent-green);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 2px;
+        }
+
+        .chart-value-change.negative {
+            color: var(--accent-orange);
+        }
+
+        .chart-value-change svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        /* Bar Chart */
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 100px;
+            gap: 8px;
+        }
+
+        .bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bar {
+            width: 100%;
+            max-width: 32px;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.4s ease;
+        }
+
+        .bar.calories {
+            background: linear-gradient(to top, var(--accent-orange), rgba(249, 115, 22, 0.6));
+        }
+
+        .bar.steps {
+            background: linear-gradient(to top, var(--accent-green), rgba(34, 197, 94, 0.6));
+        }
+
+        .bar-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .bar-group.today .bar-label {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Line Chart (Weight) */
+        .line-chart {
+            height: 80px;
+            position: relative;
+        }
+
+        .line-chart svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-line {
+            fill: none;
+            stroke: var(--accent-blue);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .chart-area {
+            fill: url(#blueGradient);
+        }
+
+        .chart-dot {
+            fill: var(--accent-blue);
+        }
+
+        .chart-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+
+        .chart-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Voice Input Section */
+        .input-section {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 430px;
+            background: linear-gradient(to top, var(--bg-primary) 80%, transparent);
+            padding: 20px 24px 32px;
+            z-index: 100;
+        }
+
+        .suggestion-chips {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .suggestion-chips::-webkit-scrollbar {
+            display: none;
+        }
+
+        .chip {
+            flex-shrink: 0;
+            padding: 8px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .chip:hover {
+            background: var(--bg-elevated);
+            border-color: var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .text-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            font-size: 15px;
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .text-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .text-input:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+
+        .voice-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-full);
+            background: linear-gradient(135deg, var(--accent-green), #16a34a);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--glow-green);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .voice-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .voice-btn:active {
+            transform: scale(0.95);
+        }
+
+        .voice-btn.recording {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4), var(--glow-green);
+            }
+            50% {
+                box-shadow: 0 0 0 15px rgba(34, 197, 94, 0), var(--glow-green);
+            }
+        }
+
+        .voice-btn svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+            position: relative;
+            z-index: 1;
+        }
+
+        .voice-btn .recording-waves {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .voice-btn.recording .recording-waves {
+            opacity: 1;
+        }
+
+        .voice-btn.recording svg.mic-icon {
+            opacity: 0;
+        }
+
+        .wave-bar {
+            width: 3px;
+            background: white;
+            border-radius: 2px;
+            animation: wave 0.5s ease-in-out infinite alternate;
+        }
+
+        .wave-bar:nth-child(1) { height: 12px; animation-delay: 0s; }
+        .wave-bar:nth-child(2) { height: 20px; animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { height: 16px; animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { height: 24px; animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { height: 14px; animation-delay: 0.4s; }
+
+        @keyframes wave {
+            from { transform: scaleY(0.5); }
+            to { transform: scaleY(1); }
+        }
+
+        /* Scrollable content area */
+        .content-scroll {
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .content-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 380px) {
+            .summary-grid {
+                gap: 10px;
+            }
+            
+            .stat-card {
+                padding: 14px;
+            }
+            
+            .stat-value {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="ambient-glow"></div>
+        
+        <!-- Header -->
+        <header class="header">
+            <div class="greeting">
+                <span class="greeting-time">Thursday Afternoon</span>
+                <h1 class="greeting-name">Hey, Samarth</h1>
+            </div>
+            <button class="profile-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+        </header>
+
+        <div class="content-scroll">
+            <!-- Today's Summary -->
+            <section class="summary-section">
+                <div class="summary-grid">
+                    <!-- Primary Calories Card -->
+                    <div class="stat-card primary">
+                        <div class="stat-content">
+                            <div class="stat-main">
+                                <div class="stat-icon calories">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+                                    </svg>
+                                </div>
+                                <div class="stat-label">Calories</div>
+                                <div class="stat-value">870 <span class="unit">/ 1,500</span></div>
+                                <div class="stat-progress">
+                                    <div class="stat-progress-bar orange" style="width: 58%"></div>
+                                </div>
+                                <div class="stat-goal">630 remaining today</div>
+                            </div>
+                            <div class="stat-visual">
+                                <svg class="circular-progress" width="80" height="80" viewBox="0 0 80 80">
+                                    <circle class="bg" cx="40" cy="40" r="34"></circle>
+                                    <circle class="progress" cx="40" cy="40" r="34" 
+                                        stroke-dasharray="213.6" 
+                                        stroke-dashoffset="89.7"></circle>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Steps Card -->
+                    <div class="stat-card">
+                        <div class="stat-icon steps">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M13 4v16"></path>
+                                <path d="M17 4v16"></path>
+                                <path d="M19 4H9.5a4.5 4.5 0 0 0 0 9H13"></path>
+                            </svg>
+                        </div>
+                        <div class="stat-label">Steps</div>
+                        <div class="stat-value">8,520</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar green" style="width: 85%"></div>
+                        </div>
+                        <div class="stat-goal">1,480 to goal</div>
+                    </div>
+
+                    <!-- Weight Card -->
+                    <div class="stat-card">
+                        <div class="stat-icon weight">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="5" r="3"></circle>
+                                <path d="M6.5 8a2 2 0 0 0-1.905 1.46L2.1 18.5A2 2 0 0 0 4 21h16a2 2 0 0 0 1.925-2.54L19.4 9.5A2 2 0 0 0 17.5 8Z"></path>
+                            </svg>
+                        </div>
+                        <div class="stat-label">Weight</div>
+                        <div class="stat-value">64.3 <span class="unit">kg</span></div>
+                        <div class="stat-goal" style="margin-top: 16px;">↓ 0.2 this week</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Today's Log -->
+            <section class="log-section">
+                <div class="section-header">
+                    <span class="section-title">Today's Log</span>
+                    <span class="section-action">See All</span>
+                </div>
+
+                <div class="log-list">
+                    <div class="log-item">
+                        <div class="log-item-icon meal">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                                <line x1="6" y1="1" x2="6" y2="4"></line>
+                                <line x1="10" y1="1" x2="10" y2="4"></line>
+                                <line x1="14" y1="1" x2="14" y2="4"></line>
+                            </svg>
+                        </div>
+                        <div class="log-item-content">
+                            <div class="log-item-title">Masala Dosa + Filter Coffee</div>
+                            <div class="log-item-meta">Breakfast · 8:30 AM</div>
+                        </div>
+                        <div class="log-item-value">325 kcal</div>
+                    </div>
+
+                    <div class="log-item">
+                        <div class="log-item-icon activity">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 16.9A5 5 0 0 0 15 8h-4a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H9.5a4.5 4.5 0 1 1 0-9H14"></path>
+                            </svg>
+                        </div>
+                        <div class="log-item-content">
+                            <div class="log-item-title">Walk to Office</div>
+                            <div class="log-item-meta">3 km · 9:15 AM</div>
+                        </div>
+                        <div class="log-item-value">+4,200 steps</div>
+                    </div>
+
+                    <div class="log-item">
+                        <div class="log-item-icon meal">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                                <line x1="6" y1="1" x2="6" y2="4"></line>
+                                <line x1="10" y1="1" x2="10" y2="4"></line>
+                                <line x1="14" y1="1" x2="14" y2="4"></line>
+                            </svg>
+                        </div>
+                        <div class="log-item-content">
+                            <div class="log-item-title">Chicken Wrap + Banana</div>
+                            <div class="log-item-meta">Lunch · 12:30 PM</div>
+                        </div>
+                        <div class="log-item-value">525 kcal</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Trends Section -->
+            <section class="trends-section">
+                <div class="section-header">
+                    <span class="section-title">Weekly Trends</span>
+                </div>
+
+                <div class="trends-tabs">
+                    <div class="trend-tab active">Calories</div>
+                    <div class="trend-tab">Steps</div>
+                    <div class="trend-tab">Weight</div>
+                </div>
+
+                <!-- Calories Chart -->
+                <div class="chart-card" id="caloriesChart">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">Daily Calories</div>
+                            <div class="chart-subtitle">Last 7 days average</div>
+                        </div>
+                        <div class="chart-value">
+                            <div class="chart-value-main">1,380</div>
+                            <div class="chart-value-change">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                    <polyline points="17 6 23 6 23 12"></polyline>
+                                </svg>
+                                Under goal
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bar-chart">
+                        <div class="bar-group">
+                            <div class="bar calories" style="height: 70px;"></div>
+                            <span class="bar-label">Mon</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar calories" style="height: 85px;"></div>
+                            <span class="bar-label">Tue</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar calories" style="height: 60px;"></div>
+                            <span class="bar-label">Wed</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar calories" style="height: 90px;"></div>
+                            <span class="bar-label">Thu</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar calories" style="height: 75px;"></div>
+                            <span class="bar-label">Fri</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar calories" style="height: 95px;"></div>
+                            <span class="bar-label">Sat</span>
+                        </div>
+                        <div class="bar-group today">
+                            <div class="bar calories" style="height: 55px;"></div>
+                            <span class="bar-label">Today</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Steps Chart -->
+                <div class="chart-card" id="stepsChart" style="display: none;">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">Daily Steps</div>
+                            <div class="chart-subtitle">Last 7 days average</div>
+                        </div>
+                        <div class="chart-value">
+                            <div class="chart-value-main">9,240</div>
+                            <div class="chart-value-change">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                    <polyline points="17 6 23 6 23 12"></polyline>
+                                </svg>
+                                +12% vs last week
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bar-chart">
+                        <div class="bar-group">
+                            <div class="bar steps" style="height: 80px;"></div>
+                            <span class="bar-label">Mon</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar steps" style="height: 95px;"></div>
+                            <span class="bar-label">Tue</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar steps" style="height: 70px;"></div>
+                            <span class="bar-label">Wed</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar steps" style="height: 100px;"></div>
+                            <span class="bar-label">Thu</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar steps" style="height: 65px;"></div>
+                            <span class="bar-label">Fri</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar steps" style="height: 50px;"></div>
+                            <span class="bar-label">Sat</span>
+                        </div>
+                        <div class="bar-group today">
+                            <div class="bar steps" style="height: 85px;"></div>
+                            <span class="bar-label">Today</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weight Chart -->
+                <div class="chart-card" id="weightChart" style="display: none;">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">Weight Trend</div>
+                            <div class="chart-subtitle">Last 4 weeks</div>
+                        </div>
+                        <div class="chart-value">
+                            <div class="chart-value-main">64.3 kg</div>
+                            <div class="chart-value-change">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+                                    <polyline points="17 18 23 18 23 12"></polyline>
+                                </svg>
+                                -1.2 kg this month
+                            </div>
+                        </div>
+                    </div>
+                    <div class="line-chart">
+                        <svg viewBox="0 0 300 80" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="blueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color: rgba(59, 130, 246, 0.3)"/>
+                                    <stop offset="100%" style="stop-color: rgba(59, 130, 246, 0)"/>
+                                </linearGradient>
+                            </defs>
+                            <path class="chart-area" d="M0,60 L50,55 L100,50 L150,45 L200,40 L250,35 L300,30 L300,80 L0,80 Z"/>
+                            <path class="chart-line" d="M0,60 L50,55 L100,50 L150,45 L200,40 L250,35 L300,30"/>
+                            <circle class="chart-dot" cx="0" cy="60" r="4"/>
+                            <circle class="chart-dot" cx="50" cy="55" r="4"/>
+                            <circle class="chart-dot" cx="100" cy="50" r="4"/>
+                            <circle class="chart-dot" cx="150" cy="45" r="4"/>
+                            <circle class="chart-dot" cx="200" cy="40" r="4"/>
+                            <circle class="chart-dot" cx="250" cy="35" r="4"/>
+                            <circle class="chart-dot" cx="300" cy="30" r="5" stroke="white" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <div class="chart-labels">
+                        <span class="chart-label">Dec 16</span>
+                        <span class="chart-label">Dec 23</span>
+                        <span class="chart-label">Dec 30</span>
+                        <span class="chart-label">Jan 6</span>
+                        <span class="chart-label">Today</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Voice Input Section -->
+        <div class="input-section">
+            <div class="suggestion-chips">
+                <div class="chip">🍽️ Log meal</div>
+                <div class="chip">🏃 Add workout</div>
+                <div class="chip">⚖️ Update weight</div>
+                <div class="chip">📊 Show weekly</div>
+                <div class="chip">💡 Suggestions</div>
+            </div>
+            <div class="input-container">
+                <div class="text-input-wrapper">
+                    <input type="text" class="text-input" placeholder="Tell me what you ate, did, or want to know...">
+                </div>
+                <button class="voice-btn" id="voiceBtn">
+                    <svg class="mic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" x2="12" y1="19" y2="22"></line>
+                    </svg>
+                    <div class="recording-waves">
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Voice button interaction
+        const voiceBtn = document.getElementById('voiceBtn');
+        let isRecording = false;
+
+        voiceBtn.addEventListener('click', () => {
+            isRecording = !isRecording;
+            voiceBtn.classList.toggle('recording', isRecording);
+        });
+
+        // Chip interactions
+        const chips = document.querySelectorAll('.chip');
+        const textInput = document.querySelector('.text-input');
+
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                const text = chip.textContent.replace(/^[^\w]+/, '').trim();
+                textInput.value = '';
+                textInput.placeholder = `Try: "${getSuggestion(text)}"`;
+                textInput.focus();
+            });
+        });
+
+        function getSuggestion(type) {
+            const suggestions = {
+                'Log meal': 'Had a sandwich and coffee for lunch',
+                'Add workout': '30 minutes of yoga this morning',
+                'Update weight': 'Weight is 64.1 kg today',
+                'Show weekly': 'How did I do this week?',
+                'Suggestions': 'What should I eat for dinner?'
+            };
+            return suggestions[type] || 'Tell me what you want to log...';
+        }
+
+        // Trend tabs
+        const trendTabs = document.querySelectorAll('.trend-tab');
+        const charts = {
+            'Calories': document.getElementById('caloriesChart'),
+            'Steps': document.getElementById('stepsChart'),
+            'Weight': document.getElementById('weightChart')
+        };
+
+        trendTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Update active tab
+                trendTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                // Show corresponding chart
+                Object.values(charts).forEach(chart => chart.style.display = 'none');
+                charts[tab.textContent].style.display = 'block';
+            });
+        });
+
+        // Simulate input submission
+        textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && textInput.value.trim()) {
+                console.log('User input:', textInput.value);
+                textInput.value = '';
+            }
+        });
+    </script>
+</body>
+</html>

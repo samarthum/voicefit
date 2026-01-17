@@ -10,6 +10,39 @@ export type RecordingState =
   | "saving"
   | "error";
 
+// Conversation event types
+export type ConversationEventKind =
+  | "meal"
+  | "workout_set"
+  | "weight"
+  | "steps"
+  | "question"
+  | "system";
+
+export type ConversationSource = "text" | "voice" | "system";
+
+export interface ConversationEvent {
+  id: string;
+  userId?: string;
+  kind: ConversationEventKind;
+  userText: string;
+  systemText: string | null;
+  source: ConversationSource;
+  referenceType: string | null;
+  referenceId: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export type EntryIntent = "meal" | "workout_set" | "weight" | "steps" | "question";
+
+export interface MetricInterpretation {
+  value: number;
+  confidence: number;
+  assumptions: string[];
+  unit: "kg" | "steps";
+}
+
 // Meal interpretation from LLM
 export interface MealInterpretation {
   mealType: "breakfast" | "lunch" | "dinner" | "snack";
@@ -30,6 +63,33 @@ export interface WorkoutSetInterpretation {
   confidence: number; // 0-1
   assumptions: string[];
 }
+
+export type InterpretEntryResponse =
+  | {
+      intent: "meal";
+      payload: MealInterpretation;
+      systemDraft?: string | null;
+    }
+  | {
+      intent: "workout_set";
+      payload: WorkoutSetInterpretation;
+      systemDraft?: string | null;
+    }
+  | {
+      intent: "weight";
+      payload: MetricInterpretation;
+      systemDraft?: string | null;
+    }
+  | {
+      intent: "steps";
+      payload: MetricInterpretation;
+      systemDraft?: string | null;
+    }
+  | {
+      intent: "question";
+      payload: { answer: string };
+      systemDraft?: string | null;
+    };
 
 // Dashboard data structure
 export interface DashboardData {

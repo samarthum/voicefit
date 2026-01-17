@@ -13,18 +13,22 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function BottomNav() {
+interface BottomNavProps {
+  className?: string;
+}
+
+export function BottomNav({ className }: BottomNavProps) {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-4 left-4 right-4 z-50">
+    <nav className={cn("fixed bottom-4 left-4 right-4 z-50", className)}>
       <div
         className={cn(
           "mx-auto max-w-lg",
-          "bg-gradient-to-b from-card to-card/95",
+          "bg-card/80",
           "backdrop-blur-xl",
-          "rounded-2xl border border-border/50",
-          "shadow-xl shadow-foreground/10",
+          "rounded-2xl border border-border/60",
+          "shadow-[0_10px_30px_rgba(0,0,0,0.35)]",
           "px-2"
         )}
       >
