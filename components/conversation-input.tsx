@@ -35,8 +35,8 @@ type Suggestion =
 const suggestions: Suggestion[] = [
   { label: "Meal", icon: UtensilsCrossed, action: "autofill", value: "Had " },
   { label: "Workout", icon: Dumbbell, action: "navigate", href: "/workouts/new" },
-  { label: "Steps", icon: Footprints, action: "autofill", value: "Steps " },
-  { label: "Weight", icon: Scale, action: "autofill", value: "Weight " },
+  { label: "Steps", icon: Footprints, action: "autofill", value: "Steps today: " },
+  { label: "Weight", icon: Scale, action: "autofill", value: "Weight today: " },
 ];
 
 const buildWorkoutSystemText = (setData: {
