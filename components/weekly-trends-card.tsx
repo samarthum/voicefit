@@ -64,20 +64,39 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
   };
 
   return (
-    <Card className="relative overflow-hidden">
-      {/* Decorative background */}
-      <div className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full bg-gradient-to-tl from-secondary/10 to-transparent blur-3xl pointer-events-none" />
+    <Card className="relative overflow-hidden border-border/60 bg-card/70">
+      <div className="absolute -bottom-24 -right-16 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
 
       <CardHeader className="pb-2 relative">
         <CardTitle className="text-xl font-display">Weekly Trends</CardTitle>
       </CardHeader>
       <CardContent className="relative">
         <Tabs defaultValue="calories" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="calories">Cal</TabsTrigger>
-            <TabsTrigger value="steps">Steps</TabsTrigger>
-            <TabsTrigger value="weight">Weight</TabsTrigger>
-            <TabsTrigger value="workouts">Gym</TabsTrigger>
+          <TabsList className="flex w-full flex-wrap items-center gap-2 bg-transparent p-0">
+            <TabsTrigger
+              value="calories"
+              className="rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-xs text-muted-foreground data-[state=active]:border-orange-500/40 data-[state=active]:bg-orange-500/10 data-[state=active]:text-foreground"
+            >
+              Calories
+            </TabsTrigger>
+            <TabsTrigger
+              value="steps"
+              className="rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-xs text-muted-foreground data-[state=active]:border-emerald-500/40 data-[state=active]:bg-emerald-500/10 data-[state=active]:text-foreground"
+            >
+              Steps
+            </TabsTrigger>
+            <TabsTrigger
+              value="weight"
+              className="rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-xs text-muted-foreground data-[state=active]:border-blue-500/40 data-[state=active]:bg-blue-500/10 data-[state=active]:text-foreground"
+            >
+              Weight
+            </TabsTrigger>
+            <TabsTrigger
+              value="workouts"
+              className="rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-xs text-muted-foreground data-[state=active]:border-purple-500/40 data-[state=active]:bg-purple-500/10 data-[state=active]:text-foreground"
+            >
+              Workouts
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="calories" className="mt-4">
@@ -159,10 +178,10 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
                   <Line
                     type="monotone"
                     dataKey="steps"
-                    stroke="var(--color-secondary-foreground)"
+                    stroke="var(--color-success)"
                     strokeWidth={3}
-                    dot={{ fill: "var(--color-secondary-foreground)", strokeWidth: 0, r: 4 }}
-                    activeDot={{ r: 6, fill: "var(--color-secondary-foreground)" }}
+                    dot={{ fill: "var(--color-success)", strokeWidth: 0, r: 4 }}
+                    activeDot={{ r: 6, fill: "var(--color-success)" }}
                     connectNulls
                   />
                 </LineChart>
@@ -197,10 +216,10 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
                   <Line
                     type="monotone"
                     dataKey="weight"
-                    stroke="var(--color-accent-foreground)"
+                    stroke="var(--color-secondary)"
                     strokeWidth={3}
-                    dot={{ fill: "var(--color-accent-foreground)", strokeWidth: 0, r: 4 }}
-                    activeDot={{ r: 6, fill: "var(--color-accent-foreground)" }}
+                    dot={{ fill: "var(--color-secondary)", strokeWidth: 0, r: 4 }}
+                    activeDot={{ r: 6, fill: "var(--color-secondary)" }}
                     connectNulls
                   />
                 </LineChart>
@@ -221,7 +240,7 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
                     <div
                       className={`flex h-8 w-8 items-center justify-center rounded-full border ${
                         hasWorkout
-                          ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+                          ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-300"
                           : "border-border/60 bg-muted/40 text-muted-foreground"
                       }`}
                     >

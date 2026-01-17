@@ -6,6 +6,7 @@ import {
   successResponse,
   unauthorizedResponse,
 } from "@/lib/api-helpers";
+import { createConversationEvents } from "@/lib/conversation-events";
 import { upsertDailyMetricsSchema, listQuerySchema } from "@/lib/validations";
 
 // GET /api/daily-metrics - List daily metrics
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
       return errorResponse(parseResult.error.issues[0].message);
     }
 
-    const { date, steps, weightKg } = parseResult.data;
+    const { date, steps, weightKg, transcriptRaw } = parseResult.data;
 
     const metric = await prisma.dailyMetric.upsert({
       where: {
@@ -88,6 +89,41 @@ export async function POST(request: NextRequest) {
         ...(weightKg !== undefined && { weightKg }),
       },
     });
+
+    try {
+      const trimmedTranscript = transcriptRaw?.trim() || "";
+      const hasSteps = steps !== undefined && steps !== null;
+      const hasWeight = weightKg !== undefined && weightKg !== null;
+      const useTranscript = trimmedTranscript && (hasSteps !== hasWeight);
+      const events = [];
+      if (hasSteps) {
+        events.push({
+          userId: user.id,
+          kind: "steps" as const,
+          userText: useTranscript ? trimmedTranscript : `Steps ${steps}`,
+          systemText: `Saved ${steps.toLocaleString()} steps`,
+          source: "text" as const,
+          referenceType: "daily_metric",
+          referenceId: metric.id,
+          metadata: { steps, date },
+        });
+      }
+      if (hasWeight) {
+        events.push({
+          userId: user.id,
+          kind: "weight" as const,
+          userText: useTranscript ? trimmedTranscript : `Weight ${weightKg} kg`,
+          systemText: `Saved weight ${weightKg} kg`,
+          source: "text" as const,
+          referenceType: "daily_metric",
+          referenceId: metric.id,
+          metadata: { weightKg, date },
+        });
+      }
+      await createConversationEvents(events);
+    } catch (error) {
+      console.error("Conversation event error (daily metrics):", error);
+    }
 
     return successResponse(metric);
   } catch (error) {

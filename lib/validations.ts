@@ -3,6 +3,17 @@ import { z } from "zod";
 // Meal types enum
 export const mealTypeSchema = z.enum(["breakfast", "lunch", "dinner", "snack"]);
 
+// Conversation event enums
+export const conversationEventKindSchema = z.enum([
+  "meal",
+  "workout_set",
+  "weight",
+  "steps",
+  "question",
+  "system",
+]);
+export const conversationSourceSchema = z.enum(["text", "voice", "system"]);
+
 // Transcribe request
 export const transcribeRequestSchema = z.object({
   audio: z.instanceof(File).or(z.instanceof(Blob)),
@@ -14,6 +25,29 @@ export const interpretMealRequestSchema = z.object({
   mealType: mealTypeSchema.optional(),
   eatenAt: z.string().datetime().optional(),
 });
+// Unified entry interpretation request
+export const interpretEntryRequestSchema = z.object({
+  transcript: z.string().min(1, "Transcript is required"),
+  source: conversationSourceSchema.optional(),
+  timezone: z.string().optional(),
+});
+
+// Intent classifier output
+export const intentClassificationSchema = z.object({
+  intent: z.enum(["meal", "workout_set", "weight", "steps", "question"]),
+  confidence: z.number().min(0).max(1).optional().default(0.6),
+  weightKg: z.number().min(0).nullable().optional(),
+  steps: z.number().int().min(0).nullable().optional(),
+  assumptions: z.array(z.string()).optional().default([]),
+});
+
+// Metric interpretation (weight/steps)
+export const metricInterpretationSchema = z.object({
+  value: z.number().min(0),
+  confidence: z.number().min(0).max(1),
+  assumptions: z.array(z.string()),
+});
+
 
 // Meal interpretation response from LLM
 export const mealInterpretationSchema = z.object({
@@ -99,6 +133,18 @@ export const upsertDailyMetricsSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD format"),
   steps: z.number().int().min(0).optional().nullable(),
   weightKg: z.number().min(20).max(300).optional().nullable(),
+  transcriptRaw: z.string().optional(),
+});
+
+// Conversation event create request
+export const createConversationEventSchema = z.object({
+  kind: conversationEventKindSchema,
+  userText: z.string().min(1, "User text is required"),
+  systemText: z.string().optional().nullable(),
+  source: conversationSourceSchema,
+  referenceType: z.string().optional().nullable(),
+  referenceId: z.string().optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
 });
 
 // User goals update request
@@ -116,6 +162,16 @@ export const listQuerySchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
+// Query params for conversation feed
+export const listConversationQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+  offset: z.coerce.number().int().min(0).default(0),
+  before: z.string().datetime().optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  timezone: z.string().optional(),
+  kind: conversationEventKindSchema.optional(),
+});
+
 // Type exports
 export type MealType = z.infer<typeof mealTypeSchema>;
 export type CreateMealInput = z.infer<typeof createMealSchema>;
@@ -124,6 +180,10 @@ export type CreateWorkoutSessionInput = z.infer<typeof createWorkoutSessionSchem
 export type UpdateWorkoutSessionInput = z.infer<typeof updateWorkoutSessionSchema>;
 export type CreateWorkoutSetInput = z.infer<typeof createWorkoutSetSchema>;
 export type UpdateWorkoutSetInput = z.infer<typeof updateWorkoutSetSchema>;
+export type InterpretEntryRequestInput = z.infer<typeof interpretEntryRequestSchema>;
+export type IntentClassificationInput = z.infer<typeof intentClassificationSchema>;
 export type UpsertDailyMetricsInput = z.infer<typeof upsertDailyMetricsSchema>;
 export type UpdateUserGoalsInput = z.infer<typeof updateUserGoalsSchema>;
 export type ListQueryInput = z.infer<typeof listQuerySchema>;
+export type CreateConversationEventInput = z.infer<typeof createConversationEventSchema>;
+export type ListConversationQueryInput = z.infer<typeof listConversationQuerySchema>;

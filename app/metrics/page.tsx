@@ -30,8 +30,8 @@ export default function MetricsPage() {
 
 function MetricsPageSkeleton() {
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="min-h-screen bg-background pb-28">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-14 items-center justify-between px-4">
           <h1 className="text-lg font-semibold">Daily Metrics</h1>
         </div>
@@ -213,10 +213,10 @@ function MetricsPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-28">
       <Toaster />
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-14 items-center justify-between px-4">
           <h1 className="text-lg font-semibold">Daily Metrics</h1>
           <UserButton afterSignOutUrl="/" />

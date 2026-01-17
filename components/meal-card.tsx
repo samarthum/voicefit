@@ -60,7 +60,7 @@ export function MealCard({
   });
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-xl">
+    <Card className="border-border/60 bg-card/70 transition-all duration-200 hover:shadow-xl hover:shadow-black/30">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -74,7 +74,7 @@ export function MealCard({
             </div>
             <p className="text-sm font-medium truncate mb-1">{description}</p>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-semibold tabular-nums text-primary">
+              <span className="text-xl font-semibold tabular-nums text-orange-300">
                 {calories}
               </span>
               <span className="text-sm text-muted-foreground">kcal</span>

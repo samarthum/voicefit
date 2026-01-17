@@ -148,11 +148,11 @@ export default function MealsPage() {
   const canGoForward = page < totalPages;
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-28">
       <Toaster />
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-gradient-to-b from-background via-background to-background/80 backdrop-blur-sm border-b border-border/50">
+      <header className="sticky top-0 z-40 bg-gradient-to-b from-background/90 via-background/80 to-background/70 backdrop-blur-sm border-b border-border/60">
         <div className="flex h-16 items-center justify-between px-4 max-w-lg mx-auto">
           <h1 className="text-lg font-display text-foreground">Meal Logs</h1>
           <UserButton afterSignOutUrl="/" />
@@ -193,7 +193,11 @@ export default function MealsPage() {
         <div className="animate-fade-up">
           <Sheet open={mealSheetOpen} onOpenChange={setMealSheetOpen}>
             <SheetTrigger asChild>
-              <Button className="w-full" size="lg">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full border-border/60 bg-card/70 text-foreground hover:bg-card"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Log Meal
               </Button>

@@ -1,9 +1,9 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RadialProgress } from "@/components/ui/radial-progress";
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Scale, Dumbbell, ChevronLeft, ChevronRight } from "lucide-react";
+import { Footprints, Scale, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TodaySummaryCardProps {
   dateLabel?: string;
@@ -16,8 +16,6 @@ interface TodaySummaryCardProps {
     goal: number;
   };
   weight: number | null;
-  workoutSessions: number;
-  workoutSets: number;
   onPreviousDay?: () => void;
   onNextDay?: () => void;
   isToday?: boolean;
@@ -28,29 +26,30 @@ export function TodaySummaryCard({
   calories,
   steps,
   weight,
-  workoutSessions,
-  workoutSets,
   onPreviousDay,
   onNextDay,
   isToday = true,
 }: TodaySummaryCardProps) {
-  // Calculate remaining calories (goal - consumed)
-  const caloriesRemaining = Math.max(calories.goal - calories.consumed, 0);
   const calorieProgress = Math.min((calories.consumed / calories.goal) * 100, 100);
-
-  // Calculate step progress (completed / goal)
-  const stepsCompleted = steps.count ?? 0;
-  const stepProgress = Math.min((stepsCompleted / steps.goal) * 100, 100);
+  const stepProgress = steps.count
+    ? Math.min((steps.count / steps.goal) * 100, 100)
+    : 0;
+  const calorieRemaining = Math.max(calories.goal - calories.consumed, 0);
+  const calorieRingStyle = {
+    background: `conic-gradient(#f97316 ${calorieProgress}%, rgba(255, 255, 255, 0.08) 0)`,
+  };
 
   return (
-    <Card className="relative overflow-hidden">
-      {/* Decorative background blob */}
-      <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-16 -left-16 w-32 h-32 rounded-full bg-gradient-to-tr from-secondary/20 to-transparent blur-2xl pointer-events-none" />
+    <Card className="relative overflow-hidden border-border/60 bg-card/70">
+      <div className="absolute -top-20 right-0 h-36 w-36 rounded-full bg-emerald-500/10 blur-3xl" />
+      <div className="absolute -bottom-24 left-4 h-40 w-40 rounded-full bg-purple-500/10 blur-3xl" />
 
-      <CardHeader className="pb-2 relative">
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-display">{dateLabel}</CardTitle>
+          <div>
+            <CardTitle className="text-lg font-display">{dateLabel}</CardTitle>
+            <p className="text-xs text-muted-foreground">Daily snapshot</p>
+          </div>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
@@ -75,75 +74,71 @@ export function TodaySummaryCard({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5 relative">
-        {/* Radial Progress Section - Two columns */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Calories - Remaining */}
-          <div className="flex flex-col items-center">
-            <RadialProgress
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2 rounded-2xl border border-border/60 bg-muted/40 p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Calories
+                </p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold tabular-nums text-foreground">
+                    {calories.consumed.toLocaleString()}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    / {calories.goal.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {calorieRemaining.toLocaleString()} remaining
+                </p>
+              </div>
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-full p-1"
+                style={calorieRingStyle}
+              >
+                <div className="h-full w-full rounded-full bg-background/90" />
+              </div>
+            </div>
+            <Progress
               value={calorieProgress}
-              size={130}
-              strokeWidth={10}
-              indicatorClassName="stroke-primary"
-            >
-              <span className="text-xs text-muted-foreground">Remaining</span>
-              <span className="text-2xl font-bold tabular-nums">
-                {caloriesRemaining.toLocaleString()}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                Goal {calories.goal.toLocaleString()} kcal
-              </span>
-            </RadialProgress>
-            <span className="mt-2 text-sm font-medium text-muted-foreground">Calories</span>
+              className="mt-3 h-1.5 [&>div]:bg-gradient-to-r [&>div]:from-orange-500 [&>div]:to-orange-400"
+            />
           </div>
 
-          {/* Steps - Completed */}
-          <div className="flex flex-col items-center">
-            <RadialProgress
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-emerald-500/15 p-2">
+                <Footprints className="h-4 w-4 text-emerald-300" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Steps</p>
+                <p className="text-lg font-semibold tabular-nums">
+                  {steps.count?.toLocaleString() ?? "---"}
+                </p>
+              </div>
+            </div>
+            <Progress
               value={stepProgress}
-              size={130}
-              strokeWidth={10}
-              indicatorClassName="stroke-secondary-foreground"
-            >
-              <span className="text-xs text-muted-foreground">Completed</span>
-              <span className="text-2xl font-bold tabular-nums">
-                {stepsCompleted.toLocaleString()}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                Goal {steps.goal.toLocaleString()}
-              </span>
-            </RadialProgress>
-            <span className="mt-2 text-sm font-medium text-muted-foreground">Steps</span>
+              className="mt-3 h-1.5 [&>div]:bg-gradient-to-r [&>div]:from-emerald-500 [&>div]:to-emerald-400"
+            />
           </div>
-        </div>
 
-        {/* Weight and Workouts */}
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-accent/40 transition-colors hover:bg-accent/60">
-            <div className="p-2 rounded-lg bg-accent">
-              <Scale className="h-5 w-5 text-accent-foreground/80" />
-            </div>
-            <div>
-              <p className="text-lg font-semibold tabular-nums">
-                {weight ? `${weight} kg` : "---"}
-              </p>
-              <p className="text-xs text-muted-foreground">Weight</p>
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-blue-500/15 p-2">
+                <Scale className="h-4 w-4 text-blue-300" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Weight</p>
+                <p className="text-lg font-semibold tabular-nums">
+                  {weight ? `${weight} kg` : "---"}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-secondary/40 transition-colors hover:bg-secondary/60">
-            <div className="p-2 rounded-lg bg-secondary">
-              <Dumbbell className="h-5 w-5 text-secondary-foreground/80" />
-            </div>
-            <div>
-              <p className="text-lg font-semibold tabular-nums">
-                {workoutSets}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {workoutSessions} session{workoutSessions !== 1 ? "s" : ""}
-              </p>
-            </div>
-          </div>
         </div>
       </CardContent>
     </Card>

@@ -201,10 +201,10 @@ export default function WorkoutDetailPage() {
   }, [session]);
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-28">
       <Toaster />
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Button
@@ -218,7 +218,10 @@ export default function WorkoutDetailPage() {
               {session?.title || "Workout"}
             </h1>
             {isActive && (
-              <Badge variant="secondary" className="bg-green-500/10 text-green-600 dark:text-green-400">
+              <Badge
+                variant="secondary"
+                className="border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+              >
                 Active
               </Badge>
             )}

@@ -7,6 +7,7 @@ import {
   unauthorizedResponse,
   notFoundResponse,
 } from "@/lib/api-helpers";
+import { createConversationEvent } from "@/lib/conversation-events";
 import { createWorkoutSetSchema } from "@/lib/validations";
 
 type RecentSet = { exerciseName: string };
@@ -56,6 +57,49 @@ export async function POST(request: NextRequest) {
         transcriptRaw,
       },
     });
+
+    try {
+      const userText = transcriptRaw?.trim() || `Added ${exerciseName}`;
+      const details: string[] = [];
+      if (exerciseType === "cardio") {
+        if (durationMinutes !== null && durationMinutes !== undefined) {
+          details.push(`${durationMinutes} min`);
+        }
+      } else {
+        if (reps !== null && reps !== undefined) {
+          details.push(`${reps} reps`);
+        }
+        if (weightKg !== null && weightKg !== undefined) {
+          details.push(`${weightKg} kg`);
+        }
+      }
+      const detailText = details.length ? ` · ${details.join(" · ")}` : "";
+
+      await createConversationEvent({
+        userId: user.id,
+        kind: "workout_set",
+        userText,
+        systemText: `Logged ${exerciseName}${detailText}`,
+        source: "text",
+        referenceType: "workout_set",
+        referenceId: set.id,
+        metadata: {
+          exerciseName,
+          exerciseType,
+          reps,
+          weightKg,
+          durationMinutes,
+          notes,
+          performedAt: set.performedAt.toISOString(),
+          sessionId: session.id,
+          sessionTitle: session.title,
+          sessionStartedAt: session.startedAt.toISOString(),
+          sessionEndedAt: session.endedAt ? session.endedAt.toISOString() : null,
+        },
+      });
+    } catch (error) {
+      console.error("Conversation event error (workout set):", error);
+    }
 
     return successResponse(set, 201);
   } catch (error) {

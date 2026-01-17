@@ -6,6 +6,7 @@ import {
   successResponse,
   unauthorizedResponse,
 } from "@/lib/api-helpers";
+import { createConversationEvent } from "@/lib/conversation-events";
 import { createMealSchema, listQuerySchema } from "@/lib/validations";
 
 // GET /api/meals - List meals
@@ -101,6 +102,27 @@ export async function POST(request: NextRequest) {
         transcriptRaw,
       },
     });
+
+    try {
+      const userText = transcriptRaw?.trim() || description;
+      await createConversationEvent({
+        userId: user.id,
+        kind: "meal",
+        userText,
+        systemText: `Logged ${description} · ${calories} kcal`,
+        source: "text",
+        referenceType: "meal",
+        referenceId: meal.id,
+        metadata: {
+          mealType,
+          description,
+          calories,
+          eatenAt: meal.eatenAt.toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error("Conversation event error (meal):", error);
+    }
 
     return successResponse(meal, 201);
   } catch (error) {

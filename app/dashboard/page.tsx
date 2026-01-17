@@ -1,23 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { UserButton } from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TodaySummaryCard } from "@/components/today-summary-card";
 import { WeeklyTrendsCard } from "@/components/weekly-trends-card";
-import { VoiceMealLogger } from "@/components/voice-meal-logger";
+import { ConversationFeed } from "@/components/conversation-feed";
+import { ConversationInput } from "@/components/conversation-input";
 import { BottomNav } from "@/components/bottom-nav";
-import { Utensils, Dumbbell, Footprints, Scale } from "lucide-react";
+import type { ConversationFeedEvent } from "@/components/conversation-item";
 import type { DashboardData } from "@/lib/types";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -43,16 +35,195 @@ function formatDateDisplay(dateString: string): string {
   if (diffDays === -1) return "Yesterday";
   if (diffDays === 1) return "Tomorrow";
 
-  return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 }
 
+const getMetadataObject = (metadata: ConversationFeedEvent["metadata"]) => {
+  if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
+    return metadata as Record<string, unknown>;
+  }
+  return {};
+};
+
+function getEventLocalDate(event: ConversationFeedEvent): string {
+  const metadata = getMetadataObject(event.metadata);
+  const metadataDate = typeof metadata.date === "string" ? metadata.date : null;
+  if (metadataDate) return metadataDate;
+
+  const sessionOccurredAt =
+    typeof metadata.sessionOccurredAt === "string" ? metadata.sessionOccurredAt : null;
+  if (sessionOccurredAt) return new Date(sessionOccurredAt).toLocaleDateString("en-CA");
+
+  const eatenAt = typeof metadata.eatenAt === "string" ? metadata.eatenAt : null;
+  if (eatenAt) return new Date(eatenAt).toLocaleDateString("en-CA");
+
+  const performedAt = typeof metadata.performedAt === "string" ? metadata.performedAt : null;
+  if (performedAt) return new Date(performedAt).toLocaleDateString("en-CA");
+
+  return new Date(event.createdAt).toLocaleDateString("en-CA");
+}
+
+type WorkoutSessionSet = {
+  id?: string;
+  exerciseName: string;
+  exerciseType?: string;
+  reps?: number | null;
+  weightKg?: number | null;
+  durationMinutes?: number | null;
+  notes?: string | null;
+  performedAt?: string;
+};
+
+const getEventOccurrenceTimestamp = (event: ConversationFeedEvent): number => {
+  const metadata = getMetadataObject(event.metadata);
+  const candidates = [
+    typeof metadata.sessionOccurredAt === "string" ? metadata.sessionOccurredAt : null,
+    typeof metadata.performedAt === "string" ? metadata.performedAt : null,
+    typeof metadata.eatenAt === "string" ? metadata.eatenAt : null,
+    event.createdAt,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const parsed = new Date(candidate);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.getTime();
+    }
+  }
+
+  return new Date(event.createdAt).getTime();
+};
+
+const groupWorkoutSessions = (events: ConversationFeedEvent[]): ConversationFeedEvent[] => {
+  const grouped: ConversationFeedEvent[] = [];
+  const sessions = new Map<
+    string,
+    {
+      sessionId: string;
+      sessionDate: string;
+      sessionTitle?: string;
+      sets: WorkoutSessionSet[];
+      latestTimestamp: number;
+      status?: "pending" | "failed";
+      error?: string;
+    }
+  >();
+
+  for (const event of events) {
+    if (event.kind !== "workout_set") {
+      grouped.push(event);
+      continue;
+    }
+
+    const metadata = getMetadataObject(event.metadata);
+    const sessionId = typeof metadata.sessionId === "string" ? metadata.sessionId : null;
+    if (!sessionId) {
+      grouped.push(event);
+      continue;
+    }
+
+    const exerciseName =
+      typeof metadata.exerciseName === "string"
+        ? metadata.exerciseName
+        : event.userText?.trim() || "Workout set";
+    const performedAt =
+      typeof metadata.performedAt === "string" ? metadata.performedAt : event.createdAt;
+    const setTimestamp = new Date(performedAt).getTime();
+    const sessionDate = getEventLocalDate(event);
+    const sessionKey = `${sessionId}:${sessionDate}`;
+    const sessionTitle =
+      typeof metadata.sessionTitle === "string" ? metadata.sessionTitle : undefined;
+
+    const setSummary: WorkoutSessionSet = {
+      id: event.referenceId ?? undefined,
+      exerciseName,
+      exerciseType: typeof metadata.exerciseType === "string" ? metadata.exerciseType : undefined,
+      reps: typeof metadata.reps === "number" ? metadata.reps : null,
+      weightKg: typeof metadata.weightKg === "number" ? metadata.weightKg : null,
+      durationMinutes:
+        typeof metadata.durationMinutes === "number" ? metadata.durationMinutes : null,
+      notes: typeof metadata.notes === "string" ? metadata.notes : null,
+      performedAt,
+    };
+
+    const existing = sessions.get(sessionKey);
+    if (existing) {
+      existing.sets.push(setSummary);
+      existing.latestTimestamp = Math.max(existing.latestTimestamp, setTimestamp);
+      if (event.status === "failed") {
+        existing.status = "failed";
+        existing.error = event.error ?? existing.error;
+      } else if (event.status === "pending" && existing.status !== "failed") {
+        existing.status = "pending";
+      }
+    } else {
+      sessions.set(sessionKey, {
+        sessionId,
+        sessionDate,
+        sessionTitle,
+        sets: [setSummary],
+        latestTimestamp: setTimestamp,
+        status: event.status,
+        error: event.error,
+      });
+    }
+  }
+
+  const sessionEvents = Array.from(sessions.values()).map((session) => {
+    const sortedSets = [...session.sets].sort((a, b) => {
+      const aTime = a.performedAt ? new Date(a.performedAt).getTime() : 0;
+      const bTime = b.performedAt ? new Date(b.performedAt).getTime() : 0;
+      return aTime - bTime;
+    });
+    const uniqueExercises = new Set(
+      sortedSets.map((set) => set.exerciseName.toLowerCase().trim())
+    );
+    const setCount = sortedSets.length;
+    const exerciseCount = uniqueExercises.size;
+    const sessionOccurredAt = new Date(session.latestTimestamp).toISOString();
+
+    return {
+      id: `session-${session.sessionId}-${session.sessionDate}`,
+      kind: "workout_set",
+      userText: "Workout session",
+      systemText: `${setCount} set${setCount === 1 ? "" : "s"} · ${exerciseCount} exercise${
+        exerciseCount === 1 ? "" : "s"
+      }`,
+      source: "system",
+      referenceType: "workout_session",
+      referenceId: session.sessionId,
+      metadata: {
+        sessionId: session.sessionId,
+        sessionTitle: session.sessionTitle,
+        sessionSets: sortedSets,
+        sessionSetCount: setCount,
+        sessionExerciseCount: exerciseCount,
+        sessionOccurredAt,
+        date: session.sessionDate,
+      },
+      createdAt: sessionOccurredAt,
+      status: session.status,
+      error: session.error,
+    };
+  });
+
+  return [...grouped, ...sessionEvents];
+};
+
 export default function DashboardPage() {
-  const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [mealSheetOpen, setMealSheetOpen] = useState(false);
+  const [conversationEvents, setConversationEvents] = useState<ConversationFeedEvent[]>([]);
+  const [optimisticEvents, setOptimisticEvents] = useState<ConversationFeedEvent[]>([]);
+  const [isConversationLoading, setIsConversationLoading] = useState(true);
+  const [isConversationLoadingMore, setIsConversationLoadingMore] = useState(false);
+  const [conversationNextBefore, setConversationNextBefore] = useState<string | null>(null);
+  const backfillAttempted = useRef(false);
 
-  // Initialize with today's date in YYYY-MM-DD format
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     return new Date().toLocaleDateString("en-CA");
   });
@@ -89,6 +260,59 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const fetchConversation = useCallback(
+    async (before?: string, append: boolean = false, allowBackfill: boolean = true) => {
+      try {
+        if (append) {
+          setIsConversationLoadingMore(true);
+        } else {
+          setIsConversationLoading(true);
+        }
+
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const params = new URLSearchParams({
+          limit: "20",
+          date: selectedDate,
+          timezone,
+          kind: "meal",
+        });
+        if (before) {
+          params.set("before", before);
+        }
+
+        const response = await fetch(`/api/conversation?${params.toString()}`);
+        const result = await response.json();
+
+        if (result.success) {
+          setConversationEvents((prev) =>
+            append ? [...prev, ...result.data.events] : result.data.events
+          );
+          setConversationNextBefore(result.data.nextBefore);
+
+          if (
+            allowBackfill &&
+            !append &&
+            !result.data.events.length &&
+            !backfillAttempted.current
+          ) {
+            backfillAttempted.current = true;
+            await fetch("/api/conversation/backfill", { method: "POST" });
+            await fetchConversation(undefined, false, false);
+          }
+        } else {
+          toast.error("Failed to load conversation history");
+        }
+      } catch (error) {
+        console.error("Conversation fetch error:", error);
+        toast.error("Failed to load conversation history");
+      } finally {
+        setIsConversationLoading(false);
+        setIsConversationLoadingMore(false);
+      }
+    },
+    [selectedDate]
+  );
+
   const navigateDate = (days: number) => {
     const currentDate = new Date(selectedDate + "T12:00:00");
     currentDate.setDate(currentDate.getDate() + days);
@@ -105,17 +329,54 @@ export default function DashboardPage() {
     fetchDashboard(selectedDate);
   }, [selectedDate, fetchDashboard]);
 
-  const handleMealSaved = () => {
-    setMealSheetOpen(false);
+  useEffect(() => {
+    fetchConversation();
+  }, [fetchConversation]);
+
+  const combinedEvents = useMemo(() => {
+    const merged = [...optimisticEvents, ...conversationEvents];
+    const filtered = merged.filter(
+      (event) => event.kind === "meal" && getEventLocalDate(event) === selectedDate
+    );
+    const grouped = groupWorkoutSessions(filtered);
+    const sorted = [...grouped].sort(
+      (a, b) => getEventOccurrenceTimestamp(b) - getEventOccurrenceTimestamp(a)
+    );
+    return sorted.slice(0, 3);
+  }, [conversationEvents, optimisticEvents, selectedDate]);
+
+  const handleOptimisticEvent = useCallback((event: ConversationFeedEvent) => {
+    setOptimisticEvents((prev) => [event, ...prev]);
+  }, []);
+
+  const handleEventResolved = useCallback((eventId: string) => {
+    setOptimisticEvents((prev) => prev.filter((event) => event.id !== eventId));
+  }, []);
+
+  const handleEventFailed = useCallback((eventId: string, error: string) => {
+    setOptimisticEvents((prev) =>
+      prev.map((event) =>
+        event.id === eventId ? { ...event, status: "failed", error } : event
+      )
+    );
+  }, []);
+
+  const handleLoadMore = useCallback(() => {
+    if (conversationNextBefore) {
+      fetchConversation(conversationNextBefore, true, false);
+    }
+  }, [conversationNextBefore, fetchConversation]);
+
+  const handleLogUpdated = useCallback(async () => {
     fetchDashboard(selectedDate);
-  };
+    await fetchConversation();
+  }, [fetchDashboard, fetchConversation, selectedDate]);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-40">
       <Toaster />
 
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-gradient-to-b from-background via-background to-background/80 backdrop-blur-sm border-b border-border/50">
+      <header className="sticky top-0 z-40 bg-gradient-to-b from-background/90 via-background/80 to-background/70 backdrop-blur-sm border-b border-border/60">
         <div className="flex h-16 items-center justify-between px-4 max-w-lg mx-auto">
           <div>
             <h1 className="text-lg font-display text-foreground">{getGreeting()}</h1>
@@ -125,19 +386,16 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="container max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* Today Summary */}
+      <main className="container max-w-lg mx-auto px-4 py-6 space-y-6 pb-32">
         <div className="animate-fade-up">
           {isLoading ? (
-            <Skeleton className="h-[280px] w-full rounded-2xl" />
+            <Skeleton className="h-[200px] w-full rounded-2xl" />
           ) : data ? (
             <TodaySummaryCard
               dateLabel={formatDateDisplay(selectedDate)}
               calories={data.today.calories}
               steps={data.today.steps}
               weight={data.today.weight}
-              workoutSessions={data.today.workoutSessions}
-              workoutSets={data.today.workoutSets}
               onPreviousDay={goToPreviousDay}
               onNextDay={goToNextDay}
               isToday={isToday}
@@ -145,81 +403,36 @@ export default function DashboardPage() {
           ) : null}
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3 stagger-children">
-          <Sheet open={mealSheetOpen} onOpenChange={setMealSheetOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-auto py-5 flex flex-col gap-3 bg-card hover:bg-card border-border/60 hover:border-primary/30 shadow-sm hover:shadow-md transition-all duration-300 group"
-              >
-                <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <Utensils className="h-5 w-5 text-primary" />
-                </div>
-                <span className="font-medium">Log Meal</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl">
-              <SheetHeader>
-                <SheetTitle className="font-display text-xl">Log Meal</SheetTitle>
-              </SheetHeader>
-              <div className="flex flex-col items-center justify-center py-8">
-                <VoiceMealLogger onMealSaved={handleMealSaved} />
-                <p className="text-sm text-muted-foreground mt-4 text-center">
-                  Tap the button and describe your meal
-                </p>
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          <Button
-            variant="outline"
-            className="h-auto py-5 flex flex-col gap-3 bg-card hover:bg-card border-border/60 hover:border-secondary-foreground/30 shadow-sm hover:shadow-md transition-all duration-300 group"
-            onClick={() => router.push("/workouts/new")}
-          >
-            <div className="p-3 rounded-xl bg-secondary group-hover:bg-secondary/80 transition-colors">
-              <Dumbbell className="h-5 w-5 text-secondary-foreground" />
-            </div>
-            <span className="font-medium">Start Workout</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            className="h-auto py-5 flex flex-col gap-3 bg-card hover:bg-card border-border/60 hover:border-accent-foreground/30 shadow-sm hover:shadow-md transition-all duration-300 group"
-            onClick={() => router.push("/metrics?tab=steps")}
-          >
-            <div className="p-3 rounded-xl bg-accent group-hover:bg-accent/80 transition-colors">
-              <Footprints className="h-5 w-5 text-accent-foreground" />
-            </div>
-            <span className="font-medium">Log Steps</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            className="h-auto py-5 flex flex-col gap-3 bg-card hover:bg-card border-border/60 hover:border-muted-foreground/30 shadow-sm hover:shadow-md transition-all duration-300 group"
-            onClick={() => router.push("/metrics?tab=weight")}
-          >
-            <div className="p-3 rounded-xl bg-muted group-hover:bg-muted/80 transition-colors">
-              <Scale className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <span className="font-medium">Log Weight</span>
-          </Button>
-        </div>
-
-        {/* Weekly Trends */}
         <div className="animate-fade-up" style={{ animationDelay: "200ms" }}>
           {isLoading ? (
-            <Skeleton className="h-[340px] w-full rounded-2xl" />
+            <Skeleton className="h-[300px] w-full rounded-2xl" />
           ) : data ? (
-            <WeeklyTrendsCard
-              data={data.weeklyTrends}
-              calorieGoal={data.today.calories.goal}
-            />
+            <WeeklyTrendsCard data={data.weeklyTrends} calorieGoal={data.today.calories.goal} />
           ) : null}
         </div>
+
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Today&apos;s Log
+            </h2>
+          </div>
+          <ConversationFeed
+            events={combinedEvents}
+            isLoading={isConversationLoading || isConversationLoadingMore}
+            hasMore={false}
+            onLoadMore={handleLoadMore}
+          />
+        </section>
       </main>
 
-      <BottomNav />
+      <ConversationInput
+        onEventOptimistic={handleOptimisticEvent}
+        onEventResolved={handleEventResolved}
+        onEventFailed={handleEventFailed}
+        onRefresh={handleLogUpdated}
+      />
+      <BottomNav className="bottom-28" />
     </div>
   );
 }

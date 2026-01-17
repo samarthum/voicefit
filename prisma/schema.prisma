@@ -21,6 +21,7 @@ model AppUser {
   fitbitConnection FitbitConnection?
   meals            MealLog[]
   workoutSessions  WorkoutSession[]
+  conversationEvents ConversationEvent[]
 }
 
 model DailyMetric {
@@ -104,4 +105,22 @@ model WorkoutSet {
 
   @@index([sessionId])
   @@index([sessionId, performedAt])
+}
+
+model ConversationEvent {
+  id            String   @id @default(cuid())
+  userId        String
+  kind          String
+  userText      String
+  systemText    String?
+  source        String
+  referenceType String?
+  referenceId   String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([referenceType, referenceId])
 }
