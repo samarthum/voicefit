@@ -373,7 +373,7 @@ export default function DashboardPage() {
   }, [fetchDashboard, fetchConversation, selectedDate]);
 
   return (
-    <div className="min-h-screen bg-background pb-40">
+    <div className="min-h-screen bg-background pb-72">
       <Toaster />
 
       <header className="sticky top-0 z-40 bg-gradient-to-b from-background/90 via-background/80 to-background/70 backdrop-blur-sm border-b border-border/60">
@@ -386,7 +386,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="container max-w-lg mx-auto px-4 py-6 space-y-6 pb-32">
+      <main className="container max-w-lg mx-auto px-4 py-6 space-y-6">
         <div className="animate-fade-up">
           {isLoading ? (
             <Skeleton className="h-[200px] w-full rounded-2xl" />
@@ -426,13 +426,17 @@ export default function DashboardPage() {
         </section>
       </main>
 
-      <ConversationInput
-        onEventOptimistic={handleOptimisticEvent}
-        onEventResolved={handleEventResolved}
-        onEventFailed={handleEventFailed}
-        onRefresh={handleLogUpdated}
-      />
-      <BottomNav className="bottom-28" />
+      <div className="fixed bottom-20 left-0 right-0 z-40 px-4 pointer-events-none">
+        <div className="max-w-lg mx-auto pointer-events-auto">
+          <ConversationInput
+            onEventOptimistic={handleOptimisticEvent}
+            onEventResolved={handleEventResolved}
+            onEventFailed={handleEventFailed}
+            onRefresh={handleLogUpdated}
+          />
+        </div>
+      </div>
+      <BottomNav />
     </div>
   );
 }
