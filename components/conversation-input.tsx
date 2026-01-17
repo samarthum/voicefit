@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Mic, Send, Square, ChevronDown, Sparkles, UtensilsCrossed, Dumbbell, Footprints, Scale } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Mic, Send, Square, ChevronDown, Sparkles, UtensilsCrossed, Dumbbell, Footprints, Scale, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useVoiceRecorder } from "@/hooks/use-voice-recorder";
@@ -27,11 +28,15 @@ interface ConversationInputProps {
   onRefresh: () => Promise<void>;
 }
 
-const suggestions = [
-  { label: "Meal", icon: UtensilsCrossed, value: "Had " },
-  { label: "Workout", icon: Dumbbell, value: "Did 3 sets of squats, 8 reps at 60 kg" },
-  { label: "Steps", icon: Footprints, value: "Steps 8500" },
-  { label: "Weight", icon: Scale, value: "Weight 72 kg" },
+type Suggestion =
+  | { label: string; icon: LucideIcon; action: "autofill"; value: string }
+  | { label: string; icon: LucideIcon; action: "navigate"; href: string };
+
+const suggestions: Suggestion[] = [
+  { label: "Meal", icon: UtensilsCrossed, action: "autofill", value: "Had " },
+  { label: "Workout", icon: Dumbbell, action: "navigate", href: "/workouts/new" },
+  { label: "Steps", icon: Footprints, action: "autofill", value: "Steps " },
+  { label: "Weight", icon: Scale, action: "autofill", value: "Weight " },
 ];
 
 const buildWorkoutSystemText = (setData: {
@@ -90,6 +95,7 @@ export function ConversationInput({
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const processingRef = useRef(false);
+  const router = useRouter();
 
   const {
     isRecording,
@@ -556,10 +562,14 @@ export function ConversationInput({
     }
   };
 
-  const handleSuggestionClick = (value: string) => {
-    setInputValue(value);
-    setIsExpanded(true);
-    setTimeout(() => textareaRef.current?.focus(), 50);
+  const handleSuggestionClick = (suggestion: Suggestion) => {
+    if (suggestion.action === "navigate") {
+      router.push(suggestion.href);
+    } else {
+      setInputValue(suggestion.value);
+      setIsExpanded(true);
+      setTimeout(() => textareaRef.current?.focus(), 50);
+    }
   };
 
   return (
@@ -678,7 +688,7 @@ export function ConversationInput({
                 {suggestions.map((suggestion) => (
                   <button
                     key={suggestion.label}
-                    onClick={() => handleSuggestionClick(suggestion.value)}
+                    onClick={() => handleSuggestionClick(suggestion)}
                     disabled={isBusy}
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-full shrink-0",
