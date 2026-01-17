@@ -411,19 +411,6 @@ export default function DashboardPage() {
           ) : null}
         </div>
 
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-              Today&apos;s Log
-            </h2>
-          </div>
-          <ConversationFeed
-            events={combinedEvents}
-            isLoading={isConversationLoading || isConversationLoadingMore}
-            hasMore={false}
-            onLoadMore={handleLoadMore}
-          />
-        </section>
       </main>
 
       <div className="fixed bottom-20 left-0 right-0 z-40 px-4 pointer-events-none">
