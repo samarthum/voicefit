@@ -61,7 +61,7 @@ export function MealCard({
 
   return (
     <Card className="border-border/60 bg-card/70 transition-all duration-200 hover:shadow-xl hover:shadow-black/30">
-      <CardContent className="p-3">
+      <CardContent className="px-3 py-2">
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
