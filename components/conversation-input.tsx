@@ -699,7 +699,7 @@ export function ConversationInput({
               </div>
 
               {/* Input Area */}
-              <div className="relative">
+              <div className="relative flex items-center">
                 <textarea
                   ref={textareaRef}
                   value={inputValue}
@@ -709,7 +709,8 @@ export function ConversationInput({
                   disabled={isBusy}
                   rows={2}
                   className={cn(
-                    "w-full resize-none rounded-2xl px-4 py-3 pr-24",
+                    "w-full resize-none rounded-2xl px-4 py-3",
+                    inputValue.trim() ? "pr-16" : "pr-28",
                     "bg-white/[0.04] border border-white/[0.08]",
                     "text-foreground placeholder:text-muted-foreground/60",
                     "focus:outline-none focus:border-primary/30 focus:bg-white/[0.06]",
@@ -719,26 +720,28 @@ export function ConversationInput({
                   )}
                 />
 
-                {/* Action Buttons */}
-                <div className="absolute right-2 bottom-2 flex items-center gap-2">
-                  {/* Mic Button */}
-                  <button
-                    onClick={handleMicClick}
-                    disabled={isBusy && !isRecording}
-                    className={cn(
-                      "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
-                      isRecording
-                        ? "bg-destructive text-white animate-pulse"
-                        : "bg-white/[0.06] text-muted-foreground hover:bg-white/[0.1] hover:text-foreground",
-                      isBusy && !isRecording && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    {isRecording ? (
-                      <Square className="w-4 h-4 fill-current" />
-                    ) : (
-                      <Mic className="w-4 h-4" />
-                    )}
-                  </button>
+                {/* Action Buttons - centered vertically */}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  {/* Mic Button - hidden when user is typing */}
+                  {!inputValue.trim() && (
+                    <button
+                      onClick={handleMicClick}
+                      disabled={isBusy && !isRecording}
+                      className={cn(
+                        "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
+                        isRecording
+                          ? "bg-destructive text-white animate-pulse"
+                          : "bg-white/[0.06] text-muted-foreground hover:bg-white/[0.1] hover:text-foreground",
+                        isBusy && !isRecording && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      {isRecording ? (
+                        <Square className="w-4 h-4 fill-current" />
+                      ) : (
+                        <Mic className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
 
                   {/* Send Button */}
                   <button

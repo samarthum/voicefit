@@ -41,10 +41,10 @@ export function TodaySummaryCard({
 
   return (
     <Card className="relative overflow-hidden border-border/60 bg-card/70">
-      <div className="absolute -top-20 right-0 h-36 w-36 rounded-full bg-emerald-500/10 blur-3xl" />
-      <div className="absolute -bottom-24 left-4 h-40 w-40 rounded-full bg-purple-500/10 blur-3xl" />
+      <div className="absolute -top-20 right-0 h-36 w-36 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 left-4 h-40 w-40 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
 
-      <CardHeader className="pb-4">
+      <CardHeader className="pb-4 relative z-10">
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-lg font-display">{dateLabel}</CardTitle>
@@ -74,7 +74,7 @@ export function TodaySummaryCard({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 relative z-10">
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2 rounded-2xl border border-border/60 bg-muted/40 p-4">
             <div className="flex items-center justify-between">
@@ -125,7 +125,7 @@ export function TodaySummaryCard({
             />
           </div>
 
-          <div className="rounded-2xl border border-border/60 bg-card/60 p-4">
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-4 flex flex-col justify-between">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-blue-500/15 p-2">
                 <Scale className="h-4 w-4 text-blue-300" />
@@ -137,6 +137,7 @@ export function TodaySummaryCard({
                 </p>
               </div>
             </div>
+            <div className="mt-3 h-1.5 rounded-full bg-gradient-to-r from-blue-500/20 via-blue-400/10 to-transparent" />
           </div>
 
         </div>

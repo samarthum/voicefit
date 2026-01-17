@@ -217,6 +217,7 @@ const groupWorkoutSessions = (events: ConversationFeedEvent[]): ConversationFeed
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [conversationEvents, setConversationEvents] = useState<ConversationFeedEvent[]>([]);
   const [optimisticEvents, setOptimisticEvents] = useState<ConversationFeedEvent[]>([]);
   const [isConversationLoading, setIsConversationLoading] = useState(true);
@@ -228,11 +229,15 @@ export default function DashboardPage() {
     return new Date().toLocaleDateString("en-CA");
   });
 
-  const fetchDashboard = useCallback(async (date: string) => {
+  const fetchDashboard = useCallback(async (date: string, showLoading = false) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
+      else setIsNavigating(true);
       const isTodayDate = date === new Date().toLocaleDateString("en-CA");
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      const minLoadingTime = showLoading ? 0 : 200;
+      const startTime = Date.now();
 
       if (isTodayDate) {
         try {
@@ -247,6 +252,11 @@ export default function DashboardPage() {
       );
       const result = await response.json();
 
+      const elapsed = Date.now() - startTime;
+      if (elapsed < minLoadingTime) {
+        await new Promise((resolve) => setTimeout(resolve, minLoadingTime - elapsed));
+      }
+
       if (result.success) {
         setData(result.data);
       } else {
@@ -257,6 +267,7 @@ export default function DashboardPage() {
       toast.error("Failed to load dashboard data");
     } finally {
       setIsLoading(false);
+      setIsNavigating(false);
     }
   }, []);
 
@@ -325,8 +336,10 @@ export default function DashboardPage() {
 
   const isToday = selectedDate === new Date().toLocaleDateString("en-CA");
 
+  const isInitialLoad = useRef(true);
   useEffect(() => {
-    fetchDashboard(selectedDate);
+    fetchDashboard(selectedDate, isInitialLoad.current);
+    isInitialLoad.current = false;
   }, [selectedDate, fetchDashboard]);
 
   useEffect(() => {
@@ -373,7 +386,7 @@ export default function DashboardPage() {
   }, [fetchDashboard, fetchConversation, selectedDate]);
 
   return (
-    <div className="min-h-screen bg-background pb-72">
+    <div className="min-h-screen bg-background pb-40">
       <Toaster />
 
       <header className="sticky top-0 z-40 bg-gradient-to-b from-background/90 via-background/80 to-background/70 backdrop-blur-sm border-b border-border/60">
@@ -388,19 +401,21 @@ export default function DashboardPage() {
 
       <main className="container max-w-lg mx-auto px-4 py-6 space-y-6">
         <div className="animate-fade-up">
-          {isLoading ? (
-            <Skeleton className="h-[200px] w-full rounded-2xl" />
-          ) : data ? (
-            <TodaySummaryCard
-              dateLabel={formatDateDisplay(selectedDate)}
-              calories={data.today.calories}
-              steps={data.today.steps}
-              weight={data.today.weight}
-              onPreviousDay={goToPreviousDay}
-              onNextDay={goToNextDay}
-              isToday={isToday}
-            />
-          ) : null}
+          <div className={`transition-all duration-150 ${isNavigating ? "opacity-50 scale-[0.98] pointer-events-none" : ""}`}>
+            {isLoading ? (
+              <Skeleton className="h-[200px] w-full rounded-2xl" />
+            ) : data ? (
+              <TodaySummaryCard
+                dateLabel={formatDateDisplay(selectedDate)}
+                calories={data.today.calories}
+                steps={data.today.steps}
+                weight={data.today.weight}
+                onPreviousDay={goToPreviousDay}
+                onNextDay={goToNextDay}
+                isToday={isToday}
+              />
+            ) : null}
+          </div>
         </div>
 
         <div className="animate-fade-up" style={{ animationDelay: "200ms" }}>
