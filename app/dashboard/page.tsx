@@ -53,6 +53,8 @@ export default function DashboardPage() {
     return new Date().toLocaleDateString("en-CA");
   });
   const keyboardOffset = useKeyboardOffset();
+  const baseBottomOffset = 80;
+  const keyboardLift = Math.max(0, keyboardOffset - baseBottomOffset);
 
   const syncFitbitSteps = useCallback(async (date: string) => {
     const syncRequestId = ++stepsSyncId.current;
@@ -210,7 +212,7 @@ export default function DashboardPage() {
 
       <div
         className="fixed bottom-20 left-0 right-0 z-40 px-4 pointer-events-none transition-transform duration-200 ease-out"
-        style={{ transform: `translateY(-${keyboardOffset}px)` }}
+        style={{ transform: `translateY(-${keyboardLift}px)` }}
       >
         <div className="max-w-lg mx-auto pointer-events-auto">
           <ConversationInput
