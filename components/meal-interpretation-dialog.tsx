@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,15 @@ interface MealInterpretationDialogProps {
   onCancel: () => void;
 }
 
-export function MealInterpretationDialog({
+export function MealInterpretationDialog(props: MealInterpretationDialogProps) {
+  const resetKey = props.interpretation
+    ? `${props.interpretation.mealType}-${props.interpretation.description}-${props.interpretation.calories}-${props.interpretation.confidence}-${props.open ? "open" : "closed"}`
+    : `meal-empty-${props.open ? "open" : "closed"}`;
+
+  return <MealInterpretationDialogInner key={resetKey} {...props} />;
+}
+
+function MealInterpretationDialogInner({
   open,
   onOpenChange,
   interpretation,
@@ -48,15 +56,6 @@ export function MealInterpretationDialog({
   const [mealType, setMealType] = useState<string>(interpretation?.mealType ?? "breakfast");
   const [description, setDescription] = useState(interpretation?.description ?? "");
   const [calories, setCalories] = useState<number>(interpretation?.calories ?? 0);
-
-  // Sync state when interpretation changes
-  useEffect(() => {
-    if (interpretation) {
-      setMealType(interpretation.mealType);
-      setDescription(interpretation.description);
-      setCalories(interpretation.calories);
-    }
-  }, [interpretation]);
 
   const handleSave = () => {
     if (description.trim() && calories >= 0) {

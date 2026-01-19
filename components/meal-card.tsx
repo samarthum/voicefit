@@ -53,11 +53,6 @@ export function MealCard({
     hour: "2-digit",
     minute: "2-digit",
   });
-  const dateStr = date.toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
 
   return (
     <Card className="border-border/60 bg-card/70 transition-all duration-200 hover:shadow-xl hover:shadow-black/30">

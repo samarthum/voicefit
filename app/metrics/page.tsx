@@ -49,7 +49,6 @@ function MetricsPageContent() {
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get("tab") || "steps";
 
-  const [_todayMetric, setTodayMetric] = useState<DailyMetric | null>(null);
   const [recentMetrics, setRecentMetrics] = useState<DailyMetric[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -78,7 +77,6 @@ function MetricsPageContent() {
       const historyResult = await historyRes.json();
 
       if (todayResult.success) {
-        setTodayMetric(todayResult.data);
         setSteps(todayResult.data.steps?.toString() || "");
         setWeight(todayResult.data.weightKg?.toString() || "");
       }
@@ -153,9 +151,6 @@ function MetricsPageContent() {
 
       if (result.success) {
         toast.success("Steps saved!");
-        if (selectedStepsDate === today) {
-          setTodayMetric((prev) => ({ ...prev!, steps: stepsValue }));
-        }
         // Refresh recent metrics to show the update
         const historyRes = await fetch("/api/daily-metrics?limit=7");
         const historyResult = await historyRes.json();
@@ -192,9 +187,6 @@ function MetricsPageContent() {
 
       if (result.success) {
         toast.success("Weight saved!");
-        if (selectedWeightDate === today) {
-          setTodayMetric((prev) => ({ ...prev!, weightKg: weightValue }));
-        }
         // Refresh recent metrics to show the update
         const historyRes = await fetch("/api/daily-metrics?limit=7");
         const historyResult = await historyRes.json();

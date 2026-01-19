@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TodaySummaryCard } from "@/components/today-summary-card";
 import { WeeklyTrendsCard } from "@/components/weekly-trends-card";
-import { ConversationFeed } from "@/components/conversation-feed";
 import { ConversationInput } from "@/components/conversation-input";
 import { BottomNav } from "@/components/bottom-nav";
 import type { ConversationFeedEvent } from "@/components/conversation-item";
 import type { DashboardData } from "@/lib/types";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { useKeyboardOffset } from "@/hooks/use-keyboard-offset";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -42,194 +42,17 @@ function formatDateDisplay(dateString: string): string {
   });
 }
 
-const getMetadataObject = (metadata: ConversationFeedEvent["metadata"]) => {
-  if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
-    return metadata as Record<string, unknown>;
-  }
-  return {};
-};
-
-function getEventLocalDate(event: ConversationFeedEvent): string {
-  const metadata = getMetadataObject(event.metadata);
-  const metadataDate = typeof metadata.date === "string" ? metadata.date : null;
-  if (metadataDate) return metadataDate;
-
-  const sessionOccurredAt =
-    typeof metadata.sessionOccurredAt === "string" ? metadata.sessionOccurredAt : null;
-  if (sessionOccurredAt) return new Date(sessionOccurredAt).toLocaleDateString("en-CA");
-
-  const eatenAt = typeof metadata.eatenAt === "string" ? metadata.eatenAt : null;
-  if (eatenAt) return new Date(eatenAt).toLocaleDateString("en-CA");
-
-  const performedAt = typeof metadata.performedAt === "string" ? metadata.performedAt : null;
-  if (performedAt) return new Date(performedAt).toLocaleDateString("en-CA");
-
-  return new Date(event.createdAt).toLocaleDateString("en-CA");
-}
-
-type WorkoutSessionSet = {
-  id?: string;
-  exerciseName: string;
-  exerciseType?: string;
-  reps?: number | null;
-  weightKg?: number | null;
-  durationMinutes?: number | null;
-  notes?: string | null;
-  performedAt?: string;
-};
-
-const getEventOccurrenceTimestamp = (event: ConversationFeedEvent): number => {
-  const metadata = getMetadataObject(event.metadata);
-  const candidates = [
-    typeof metadata.sessionOccurredAt === "string" ? metadata.sessionOccurredAt : null,
-    typeof metadata.performedAt === "string" ? metadata.performedAt : null,
-    typeof metadata.eatenAt === "string" ? metadata.eatenAt : null,
-    event.createdAt,
-  ];
-
-  for (const candidate of candidates) {
-    if (!candidate) continue;
-    const parsed = new Date(candidate);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.getTime();
-    }
-  }
-
-  return new Date(event.createdAt).getTime();
-};
-
-const groupWorkoutSessions = (events: ConversationFeedEvent[]): ConversationFeedEvent[] => {
-  const grouped: ConversationFeedEvent[] = [];
-  const sessions = new Map<
-    string,
-    {
-      sessionId: string;
-      sessionDate: string;
-      sessionTitle?: string;
-      sets: WorkoutSessionSet[];
-      latestTimestamp: number;
-      status?: "pending" | "failed";
-      error?: string;
-    }
-  >();
-
-  for (const event of events) {
-    if (event.kind !== "workout_set") {
-      grouped.push(event);
-      continue;
-    }
-
-    const metadata = getMetadataObject(event.metadata);
-    const sessionId = typeof metadata.sessionId === "string" ? metadata.sessionId : null;
-    if (!sessionId) {
-      grouped.push(event);
-      continue;
-    }
-
-    const exerciseName =
-      typeof metadata.exerciseName === "string"
-        ? metadata.exerciseName
-        : event.userText?.trim() || "Workout set";
-    const performedAt =
-      typeof metadata.performedAt === "string" ? metadata.performedAt : event.createdAt;
-    const setTimestamp = new Date(performedAt).getTime();
-    const sessionDate = getEventLocalDate(event);
-    const sessionKey = `${sessionId}:${sessionDate}`;
-    const sessionTitle =
-      typeof metadata.sessionTitle === "string" ? metadata.sessionTitle : undefined;
-
-    const setSummary: WorkoutSessionSet = {
-      id: event.referenceId ?? undefined,
-      exerciseName,
-      exerciseType: typeof metadata.exerciseType === "string" ? metadata.exerciseType : undefined,
-      reps: typeof metadata.reps === "number" ? metadata.reps : null,
-      weightKg: typeof metadata.weightKg === "number" ? metadata.weightKg : null,
-      durationMinutes:
-        typeof metadata.durationMinutes === "number" ? metadata.durationMinutes : null,
-      notes: typeof metadata.notes === "string" ? metadata.notes : null,
-      performedAt,
-    };
-
-    const existing = sessions.get(sessionKey);
-    if (existing) {
-      existing.sets.push(setSummary);
-      existing.latestTimestamp = Math.max(existing.latestTimestamp, setTimestamp);
-      if (event.status === "failed") {
-        existing.status = "failed";
-        existing.error = event.error ?? existing.error;
-      } else if (event.status === "pending" && existing.status !== "failed") {
-        existing.status = "pending";
-      }
-    } else {
-      sessions.set(sessionKey, {
-        sessionId,
-        sessionDate,
-        sessionTitle,
-        sets: [setSummary],
-        latestTimestamp: setTimestamp,
-        status: event.status,
-        error: event.error,
-      });
-    }
-  }
-
-  const sessionEvents = Array.from(sessions.values()).map((session) => {
-    const sortedSets = [...session.sets].sort((a, b) => {
-      const aTime = a.performedAt ? new Date(a.performedAt).getTime() : 0;
-      const bTime = b.performedAt ? new Date(b.performedAt).getTime() : 0;
-      return aTime - bTime;
-    });
-    const uniqueExercises = new Set(
-      sortedSets.map((set) => set.exerciseName.toLowerCase().trim())
-    );
-    const setCount = sortedSets.length;
-    const exerciseCount = uniqueExercises.size;
-    const sessionOccurredAt = new Date(session.latestTimestamp).toISOString();
-
-    return {
-      id: `session-${session.sessionId}-${session.sessionDate}`,
-      kind: "workout_set" as const,
-      userText: "Workout session",
-      systemText: `${setCount} set${setCount === 1 ? "" : "s"} · ${exerciseCount} exercise${
-        exerciseCount === 1 ? "" : "s"
-      }`,
-      source: "system" as const,
-      referenceType: "workout_session",
-      referenceId: session.sessionId,
-      metadata: {
-        sessionId: session.sessionId,
-        sessionTitle: session.sessionTitle,
-        sessionSets: sortedSets,
-        sessionSetCount: setCount,
-        sessionExerciseCount: exerciseCount,
-        sessionOccurredAt,
-        date: session.sessionDate,
-      },
-      createdAt: sessionOccurredAt,
-      status: session.status,
-      error: session.error,
-    };
-  });
-
-  return [...grouped, ...sessionEvents];
-};
-
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isStepsLoading, setIsStepsLoading] = useState(false);
-  const [conversationEvents, setConversationEvents] = useState<ConversationFeedEvent[]>([]);
-  const [optimisticEvents, setOptimisticEvents] = useState<ConversationFeedEvent[]>([]);
-  const [isConversationLoading, setIsConversationLoading] = useState(true);
-  const [isConversationLoadingMore, setIsConversationLoadingMore] = useState(false);
-  const [conversationNextBefore, setConversationNextBefore] = useState<string | null>(null);
-  const backfillAttempted = useRef(false);
   const stepsSyncId = useRef(0);
 
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     return new Date().toLocaleDateString("en-CA");
   });
+  const keyboardOffset = useKeyboardOffset();
 
   const syncFitbitSteps = useCallback(async (date: string) => {
     const syncRequestId = ++stepsSyncId.current;
@@ -308,59 +131,6 @@ export default function DashboardPage() {
     }
   }, [syncFitbitSteps]);
 
-  const fetchConversation = useCallback(
-    async (before?: string, append: boolean = false, allowBackfill: boolean = true) => {
-      try {
-        if (append) {
-          setIsConversationLoadingMore(true);
-        } else {
-          setIsConversationLoading(true);
-        }
-
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const params = new URLSearchParams({
-          limit: "20",
-          date: selectedDate,
-          timezone,
-          kind: "meal",
-        });
-        if (before) {
-          params.set("before", before);
-        }
-
-        const response = await fetch(`/api/conversation?${params.toString()}`);
-        const result = await response.json();
-
-        if (result.success) {
-          setConversationEvents((prev) =>
-            append ? [...prev, ...result.data.events] : result.data.events
-          );
-          setConversationNextBefore(result.data.nextBefore);
-
-          if (
-            allowBackfill &&
-            !append &&
-            !result.data.events.length &&
-            !backfillAttempted.current
-          ) {
-            backfillAttempted.current = true;
-            await fetch("/api/conversation/backfill", { method: "POST" });
-            await fetchConversation(undefined, false, false);
-          }
-        } else {
-          toast.error("Failed to load conversation history");
-        }
-      } catch (error) {
-        console.error("Conversation fetch error:", error);
-        toast.error("Failed to load conversation history");
-      } finally {
-        setIsConversationLoading(false);
-        setIsConversationLoadingMore(false);
-      }
-    },
-    [selectedDate]
-  );
-
   const navigateDate = (days: number) => {
     const currentDate = new Date(selectedDate + "T12:00:00");
     currentDate.setDate(currentDate.getDate() + days);
@@ -379,48 +149,20 @@ export default function DashboardPage() {
     isInitialLoad.current = false;
   }, [selectedDate, fetchDashboard]);
 
-  useEffect(() => {
-    fetchConversation();
-  }, [fetchConversation]);
-
-  const combinedEvents = useMemo(() => {
-    const merged = [...optimisticEvents, ...conversationEvents];
-    const filtered = merged.filter(
-      (event) => event.kind === "meal" && getEventLocalDate(event) === selectedDate
-    );
-    const grouped = groupWorkoutSessions(filtered);
-    const sorted = [...grouped].sort(
-      (a, b) => getEventOccurrenceTimestamp(b) - getEventOccurrenceTimestamp(a)
-    );
-    return sorted.slice(0, 3);
-  }, [conversationEvents, optimisticEvents, selectedDate]);
-
   const handleOptimisticEvent = useCallback((event: ConversationFeedEvent) => {
-    setOptimisticEvents((prev) => [event, ...prev]);
+    void event;
   }, []);
-
   const handleEventResolved = useCallback((eventId: string) => {
-    setOptimisticEvents((prev) => prev.filter((event) => event.id !== eventId));
+    void eventId;
   }, []);
-
   const handleEventFailed = useCallback((eventId: string, error: string) => {
-    setOptimisticEvents((prev) =>
-      prev.map((event) =>
-        event.id === eventId ? { ...event, status: "failed", error } : event
-      )
-    );
+    void eventId;
+    void error;
   }, []);
-
-  const handleLoadMore = useCallback(() => {
-    if (conversationNextBefore) {
-      fetchConversation(conversationNextBefore, true, false);
-    }
-  }, [conversationNextBefore, fetchConversation]);
 
   const handleLogUpdated = useCallback(async () => {
     fetchDashboard(selectedDate);
-    await fetchConversation();
-  }, [fetchDashboard, fetchConversation, selectedDate]);
+  }, [fetchDashboard, selectedDate]);
 
   return (
     <div className="min-h-screen bg-background pb-40">
@@ -466,7 +208,10 @@ export default function DashboardPage() {
 
       </main>
 
-      <div className="fixed bottom-20 left-0 right-0 z-40 px-4 pointer-events-none">
+      <div
+        className="fixed bottom-20 left-0 right-0 z-40 px-4 pointer-events-none transition-transform duration-200 ease-out"
+        style={{ transform: `translateY(-${keyboardOffset}px)` }}
+      >
         <div className="max-w-lg mx-auto pointer-events-auto">
           <ConversationInput
             onEventOptimistic={handleOptimisticEvent}

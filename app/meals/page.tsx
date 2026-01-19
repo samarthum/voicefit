@@ -9,7 +9,6 @@ import { VoiceMealLogger } from "@/components/voice-meal-logger";
 import { BottomNav } from "@/components/bottom-nav";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { Plus, Utensils, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,

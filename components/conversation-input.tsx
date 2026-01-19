@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mic, Send, Square, ChevronDown, Sparkles, UtensilsCrossed, Dumbbell, Footprints, Scale, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { useVoiceRecorder } from "@/hooks/use-voice-recorder";
 import { TranscriptEditorDialog } from "@/components/transcript-editor-dialog";
 import { MealInterpretationDialog } from "@/components/meal-interpretation-dialog";
