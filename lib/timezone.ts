@@ -59,7 +59,7 @@ export function formatDateTime(date: Date, timezone?: string): string {
 /**
  * Get start of day for a date string
  */
-export function getStartOfDay(dateString: string, _timezone?: string): Date {
+export function getStartOfDay(dateString: string): Date {
   const date = new Date(dateString + "T00:00:00");
   return date;
 }
@@ -67,7 +67,7 @@ export function getStartOfDay(dateString: string, _timezone?: string): Date {
 /**
  * Get end of day for a date string
  */
-export function getEndOfDay(dateString: string, _timezone?: string): Date {
+export function getEndOfDay(dateString: string): Date {
   const date = new Date(dateString + "T23:59:59.999");
   return date;
 }

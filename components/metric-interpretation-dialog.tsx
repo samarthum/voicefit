@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +27,12 @@ interface MetricInterpretationDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function MetricInterpretationDialog({
+export function MetricInterpretationDialog(props: MetricInterpretationDialogProps) {
+  const resetKey = `${props.metricType}-${props.value ?? "none"}-${props.confidence ?? "none"}-${props.open ? "open" : "closed"}`;
+  return <MetricInterpretationDialogInner key={resetKey} {...props} />;
+}
+
+function MetricInterpretationDialogInner({
   open,
   metricType,
   value,
@@ -39,10 +44,6 @@ export function MetricInterpretationDialog({
   onOpenChange,
 }: MetricInterpretationDialogProps) {
   const [valueInput, setValueInput] = useState<string>(value?.toString() ?? "");
-
-  useEffect(() => {
-    setValueInput(value?.toString() ?? "");
-  }, [value, metricType, open]);
 
   const getConfidenceColor = (score?: number) => {
     if (score === undefined || score === null) return "bg-muted text-muted-foreground";

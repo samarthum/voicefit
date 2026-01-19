@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +26,12 @@ interface MetricConfirmDialogProps {
   onCancel: () => void;
 }
 
-export function MetricConfirmDialog({
+export function MetricConfirmDialog(props: MetricConfirmDialogProps) {
+  const resetKey = `${props.metricType}-${props.value ?? "none"}-${props.date ?? "none"}-${props.open ? "open" : "closed"}`;
+  return <MetricConfirmDialogInner key={resetKey} {...props} />;
+}
+
+function MetricConfirmDialogInner({
   open,
   metricType,
   value,
@@ -36,15 +41,10 @@ export function MetricConfirmDialog({
   onSave,
   onCancel,
 }: MetricConfirmDialogProps) {
-  const [currentValue, setCurrentValue] = useState("");
-  const [currentDate, setCurrentDate] = useState(getTodayDateString());
-
-  useEffect(() => {
-    if (open) {
-      setCurrentValue(value !== null && value !== undefined ? String(value) : "");
-      setCurrentDate(date ?? getTodayDateString());
-    }
-  }, [open, value, date]);
+  const [currentValue, setCurrentValue] = useState(() =>
+    value !== null && value !== undefined ? String(value) : ""
+  );
+  const [currentDate, setCurrentDate] = useState(() => date ?? getTodayDateString());
 
   const handleSave = () => {
     const numericValue =

@@ -12,11 +12,6 @@ import { BottomNav } from "@/components/bottom-nav";
 import { Activity, Loader2, Target, User } from "lucide-react";
 import { toast, Toaster } from "sonner";
 
-interface UserSettings {
-  calorieGoal: number;
-  stepGoal: number;
-}
-
 interface FitbitStatus {
   connected: boolean;
   lastSyncAt: string | null;
@@ -50,7 +45,6 @@ function SettingsPageSkeleton() {
 
 function SettingsPageContent() {
   const searchParams = useSearchParams();
-  const [_settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [fitbitStatus, setFitbitStatus] = useState<FitbitStatus | null>(null);
@@ -66,7 +60,6 @@ function SettingsPageContent() {
       const result = await response.json();
 
       if (result.success) {
-        setSettings(result.data);
         setCalorieGoal(result.data.calorieGoal.toString());
         setStepGoal(result.data.stepGoal.toString());
       } else {
@@ -150,7 +143,6 @@ function SettingsPageContent() {
 
       if (result.success) {
         toast.success("Settings saved!");
-        setSettings(result.data);
       } else {
         toast.error(result.error || "Failed to save settings");
       }
