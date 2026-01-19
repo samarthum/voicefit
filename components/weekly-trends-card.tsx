@@ -3,8 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Bar,
-  BarChart,
   LineChart,
   Line,
   ReferenceLine,
@@ -12,7 +10,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 import { Check } from "lucide-react";
 
@@ -34,24 +31,23 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
     return date.toLocaleDateString("en-US", { weekday: "short" });
   };
 
-  const todayKey = new Date().toLocaleDateString("en-CA");
+  const todayKey = data[data.length - 1]?.date ?? new Date().toLocaleDateString("en-CA");
   const todayData = data.find((d) => d.date === todayKey);
 
-  // Calories & Steps: exclude today (last 7 completed days)
-  const completedDaysData = data.filter((d) => d.date !== todayKey);
+  const completedDaysData = data.filter((d) => d.date !== todayKey).slice(-7);
+  const last7DaysData = data.slice(-7);
 
   // Weight: include today only if weight was entered
   const weightData = todayData?.weight != null
-    ? data
+    ? last7DaysData
     : completedDaysData;
 
-  // Workouts: show all days including today
-  const workoutsData = data;
+  // Workouts: show last 7 days including today
+  const workoutsData = last7DaysData;
 
   const calorieChartData = completedDaysData.map((d) => ({
     ...d,
     displayDate: formatDate(d.date),
-    calorieDelta: d.calories - calorieGoal,
   }));
 
   const stepsChartData = completedDaysData.map((d) => ({
@@ -69,18 +65,32 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
     displayDate: formatDate(d.date),
   }));
 
-  const maxDelta = Math.max(
-    250,
-    ...calorieChartData.map((d) => Math.abs(d.calorieDelta))
-  );
-  const calorieDomain = [-maxDelta * 1.1, maxDelta * 1.1] as [number, number];
-  const calorieTicks = [
-    -maxDelta,
-    -Math.round(maxDelta / 2),
-    0,
-    Math.round(maxDelta / 2),
-    maxDelta,
-  ];
+  const weightValues = weightChartData
+    .map((d) => d.weight)
+    .filter((value): value is number => value != null);
+  const weightStep = 0.5;
+  const weightPadding = 0.5;
+  const weightMin = weightValues.length
+    ? Math.min(...weightValues)
+    : 0;
+  const weightMax = weightValues.length
+    ? Math.max(...weightValues)
+    : weightMin + weightStep;
+  const weightDomainMin = Math.floor((weightMin - weightPadding) / weightStep) * weightStep;
+  const weightDomainMax = Math.ceil((weightMax + weightPadding) / weightStep) * weightStep;
+  const weightTicks: number[] = [];
+  for (let value = weightDomainMin; value <= weightDomainMax + 0.001; value += weightStep) {
+    weightTicks.push(Number(value.toFixed(1)));
+  }
+
+  const calorieValues = calorieChartData.map((d) => d.calories);
+  const calorieMin = Math.min(0, calorieGoal, ...calorieValues);
+  const calorieMax = Math.max(calorieGoal, ...calorieValues);
+  const caloriePadding = Math.max(150, Math.round((calorieMax - calorieMin) * 0.15));
+  const calorieDomain = [
+    Math.max(0, calorieMin - caloriePadding),
+    calorieMax + caloriePadding,
+  ] as [number, number];
 
   const tooltipStyle = {
     backgroundColor: "#1a1a1d",
@@ -129,74 +139,74 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
           <TabsContent value="calories" className="mt-4 border-0">
             <div className="h-[200px] [&_*]:border-0 [&_*]:outline-none">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={calorieChartData} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+                <LineChart data={calorieChartData} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
                   <XAxis
                     dataKey="displayDate"
                     tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
+                    tickMargin={8}
                   />
                   <YAxis
                     tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
-                    width={50}
+                    width={60}
                     domain={calorieDomain}
-                    ticks={calorieTicks}
+                    tickMargin={12}
                     tickFormatter={(value) =>
-                      `${value > 0 ? "+" : ""}${value.toLocaleString()}`
+                      `${Number(value).toLocaleString()}`
                     }
                   />
-                  <ReferenceLine y={0} stroke="var(--color-border)" strokeDasharray="3 3" />
+                  <ReferenceLine
+                    y={calorieGoal}
+                    stroke="var(--color-border)"
+                    strokeWidth={2}
+                    strokeDasharray="3 3"
+                  />
                   <Tooltip
                     contentStyle={tooltipStyle}
                     labelStyle={{ color: "#fafafa", fontWeight: 500 }}
                     itemStyle={{ color: "#a1a1aa" }}
-                    cursor={{ fill: "rgba(255, 255, 255, 0.08)" }}
-                    formatter={(value) => {
-                      const numericValue = Number(value);
-                      const label = numericValue > 0 ? "Over target" : "Under target";
-                      return [
-                        `${numericValue > 0 ? "+" : ""}${numericValue} kcal`,
-                        label,
-                      ];
-                    }}
+                    cursor={{ stroke: "transparent" }}
+                    formatter={(value) => [
+                      `${Number(value).toLocaleString()} kcal`,
+                      "Calories",
+                    ]}
                   />
-                  <Bar dataKey="calorieDelta" radius={[6, 6, 6, 6]}>
-                    {calorieChartData.map((entry) => (
-                      <Cell
-                        key={`cell-${entry.date}`}
-                        fill={
-                          entry.calorieDelta > 0
-                            ? "var(--color-destructive)"
-                            : "var(--color-success)"
-                        }
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
+                  <Line
+                    type="monotone"
+                    dataKey="calories"
+                    stroke="var(--color-accent)"
+                    strokeWidth={3}
+                    dot={{ fill: "var(--color-accent)", strokeWidth: 0, r: 4 }}
+                    activeDot={{ r: 6, fill: "var(--color-accent)" }}
+                  />
+                </LineChart>
               </ResponsiveContainer>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              Bars show calories over (red) or under (green) your target.
+              Dotted line shows your daily calorie target.
             </p>
           </TabsContent>
 
           <TabsContent value="steps" className="mt-4 border-0">
             <div className="h-[200px] [&_*]:border-0 [&_*]:outline-none">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={stepsChartData}>
+                <LineChart data={stepsChartData} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
                   <XAxis
                     dataKey="displayDate"
                     tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
+                    tickMargin={8}
                   />
                   <YAxis
                     tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
-                    width={50}
+                    width={60}
+                    tickMargin={12}
                   />
                   <Tooltip
                     contentStyle={tooltipStyle}
@@ -223,19 +233,28 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
           <TabsContent value="weight" className="mt-4 border-0">
             <div className="h-[200px] [&_*]:border-0 [&_*]:outline-none">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weightChartData}>
+                <LineChart data={weightChartData} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
                   <XAxis
                     dataKey="displayDate"
                     tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
+                    tickMargin={8}
                   />
                   <YAxis
                     tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
-                    width={40}
-                    domain={["dataMin - 1", "dataMax + 1"]}
+                    width={60}
+                    domain={[weightDomainMin, weightDomainMax]}
+                    ticks={weightTicks}
+                    tickMargin={12}
+                    tickFormatter={(value) =>
+                      Number(value).toLocaleString("en-US", {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1,
+                      })
+                    }
                   />
                   <Tooltip
                     contentStyle={tooltipStyle}

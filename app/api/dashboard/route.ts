@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
     const selectedDateStart = new Date(selectedDate + "T00:00:00.000Z");
     const selectedDateEnd = new Date(selectedDate + "T23:59:59.999Z");
 
-    // Get last 7 days for trends (always based on actual current date)
-    const last7Days = getLastNDays(7, timezone);
+    // Get last 8 days for trends (includes today plus 7 previous days)
+    const last8Days = getLastNDays(8, timezone);
 
     // Fetch all data in parallel
     const todayMealsPromise = prisma.mealLog.findMany({
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       where: {
         userId: user.id,
         eatenAt: {
-          gte: new Date(last7Days[0] + "T00:00:00.000Z"),
+          gte: new Date(last8Days[0] + "T00:00:00.000Z"),
           lte: actualTodayEnd,
         },
       },
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     const weeklyMetricsPromise = prisma.dailyMetric.findMany({
       where: {
         userId: user.id,
-        date: { in: last7Days },
+        date: { in: last8Days },
       },
     });
 
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
       where: {
         userId: user.id,
         startedAt: {
-          gte: new Date(last7Days[0] + "T00:00:00.000Z"),
+          gte: new Date(last8Days[0] + "T00:00:00.000Z"),
           lte: actualTodayEnd,
         },
       },
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build weekly trends
-    const weeklyTrends = last7Days.map((date: string) => {
+    const weeklyTrends = last8Days.map((date: string) => {
       const dayMeals = weeklyMeals.filter(
         (m: WeeklyMeal) => m.eatenAt.toISOString().split("T")[0] === date
       );
