@@ -218,16 +218,53 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isStepsLoading, setIsStepsLoading] = useState(false);
   const [conversationEvents, setConversationEvents] = useState<ConversationFeedEvent[]>([]);
   const [optimisticEvents, setOptimisticEvents] = useState<ConversationFeedEvent[]>([]);
   const [isConversationLoading, setIsConversationLoading] = useState(true);
   const [isConversationLoadingMore, setIsConversationLoadingMore] = useState(false);
   const [conversationNextBefore, setConversationNextBefore] = useState<string | null>(null);
   const backfillAttempted = useRef(false);
+  const stepsSyncId = useRef(0);
 
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     return new Date().toLocaleDateString("en-CA");
   });
+
+  const syncFitbitSteps = useCallback(async (date: string) => {
+    const syncRequestId = ++stepsSyncId.current;
+    setIsStepsLoading(true);
+
+    try {
+      const response = await fetch(`/api/fitbit/sync?date=${encodeURIComponent(date)}`);
+      const result = await response.json();
+
+      if (stepsSyncId.current !== syncRequestId) return;
+
+      if (result.success && typeof result.data?.steps === "number") {
+        setData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            today: {
+              ...prev.today,
+              steps: {
+                ...prev.today.steps,
+                count: result.data.steps,
+              },
+            },
+          };
+        });
+      }
+    } catch (error) {
+      if (stepsSyncId.current !== syncRequestId) return;
+      console.error("Fitbit sync error:", error);
+    } finally {
+      if (stepsSyncId.current === syncRequestId) {
+        setIsStepsLoading(false);
+      }
+    }
+  }, []);
 
   const fetchDashboard = useCallback(async (date: string, showLoading = false) => {
     try {
@@ -239,12 +276,9 @@ export default function DashboardPage() {
       const minLoadingTime = showLoading ? 0 : 200;
       const startTime = Date.now();
 
-      if (isTodayDate) {
-        try {
-          await fetch(`/api/fitbit/sync?date=${encodeURIComponent(date)}`);
-        } catch (error) {
-          console.error("Fitbit sync error:", error);
-        }
+      if (!isTodayDate) {
+        stepsSyncId.current += 1;
+        setIsStepsLoading(false);
       }
 
       const response = await fetch(
@@ -259,6 +293,9 @@ export default function DashboardPage() {
 
       if (result.success) {
         setData(result.data);
+        if (isTodayDate) {
+          void syncFitbitSteps(date);
+        }
       } else {
         toast.error("Failed to load dashboard data");
       }
@@ -269,7 +306,7 @@ export default function DashboardPage() {
       setIsLoading(false);
       setIsNavigating(false);
     }
-  }, []);
+  }, [syncFitbitSteps]);
 
   const fetchConversation = useCallback(
     async (before?: string, append: boolean = false, allowBackfill: boolean = true) => {
@@ -413,6 +450,7 @@ export default function DashboardPage() {
                 onPreviousDay={goToPreviousDay}
                 onNextDay={goToNextDay}
                 isToday={isToday}
+                isStepsLoading={isStepsLoading && isToday}
               />
             ) : null}
           </div>

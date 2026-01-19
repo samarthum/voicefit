@@ -19,6 +19,7 @@ interface TodaySummaryCardProps {
   onPreviousDay?: () => void;
   onNextDay?: () => void;
   isToday?: boolean;
+  isStepsLoading?: boolean;
 }
 
 export function TodaySummaryCard({
@@ -29,6 +30,7 @@ export function TodaySummaryCard({
   onPreviousDay,
   onNextDay,
   isToday = true,
+  isStepsLoading = false,
 }: TodaySummaryCardProps) {
   const calorieProgress = Math.min((calories.consumed / calories.goal) * 100, 100);
   const stepProgress = steps.count
@@ -109,20 +111,36 @@ export function TodaySummaryCard({
 
           <div className="rounded-2xl border border-border/60 bg-card/60 p-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-emerald-500/15 p-2">
+              <div
+                className={`rounded-xl bg-emerald-500/15 p-2 ${
+                  isStepsLoading ? "animate-pulse-soft" : ""
+                }`}
+              >
                 <Footprints className="h-4 w-4 text-emerald-300" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Steps</p>
-                <p className="text-lg font-semibold tabular-nums">
-                  {steps.count?.toLocaleString() ?? "---"}
-                </p>
+                {isStepsLoading ? (
+                  <div className="relative mt-1 h-6 w-24 overflow-hidden rounded-full bg-emerald-500/10">
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-emerald-500/40 to-emerald-500/10 bg-[length:200%_100%] animate-[shimmer_1.6s_linear_infinite]" />
+                  </div>
+                ) : (
+                  <p className="text-lg font-semibold tabular-nums">
+                    {steps.count?.toLocaleString() ?? "---"}
+                  </p>
+                )}
               </div>
             </div>
-            <Progress
-              value={stepProgress}
-              className="mt-3 h-1.5 [&>div]:bg-gradient-to-r [&>div]:from-emerald-500 [&>div]:to-emerald-400"
-            />
+            {isStepsLoading ? (
+              <div className="relative mt-3 h-1.5 w-full overflow-hidden rounded-full bg-emerald-500/10">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-emerald-500/40 to-emerald-500/10 bg-[length:200%_100%] animate-[shimmer_1.6s_linear_infinite]" />
+              </div>
+            ) : (
+              <Progress
+                value={stepProgress}
+                className="mt-3 h-1.5 [&>div]:bg-gradient-to-r [&>div]:from-emerald-500 [&>div]:to-emerald-400"
+              />
+            )}
           </div>
 
           <div className="rounded-2xl border border-border/60 bg-card/60 p-4 flex flex-col justify-between">
