@@ -562,6 +562,7 @@ export function ConversationInput({
   };
 
   const isBusy = state !== "idle" || isPreparing || isRecording;
+  const isAnalyzing = state === "interpreting";
 
   const handleMicClick = () => {
     if (isRecording) {
@@ -693,104 +694,114 @@ export function ConversationInput({
                 </button>
               </div>
 
-              {/* Quick Suggestions */}
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
-                {suggestions.map((suggestion) => (
-                  <button
-                    key={suggestion.label}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    disabled={isBusy}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-full shrink-0",
-                      "bg-white/[0.04] border border-white/[0.06]",
-                      "text-sm text-muted-foreground",
-                      "transition-all duration-200",
-                      "hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-foreground",
-                      "hover:shadow-[0_0_12px_rgba(255,255,255,0.05)]",
-                      "active:scale-95",
-                      isBusy && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    <suggestion.icon className="w-4 h-4" />
-                    <span>{suggestion.label}</span>
-                  </button>
-                ))}
-              </div>
+              {isAnalyzing ? (
+                <div className="flex items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-10 text-center">
+                  <span className="text-lg font-semibold text-foreground/90 animate-pulse">
+                    Analyzing...
+                  </span>
+                </div>
+              ) : (
+                <>
+                  {/* Quick Suggestions */}
+                  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+                    {suggestions.map((suggestion) => (
+                      <button
+                        key={suggestion.label}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        disabled={isBusy}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2 rounded-full shrink-0",
+                          "bg-white/[0.04] border border-white/[0.06]",
+                          "text-sm text-muted-foreground",
+                          "transition-all duration-200",
+                          "hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-foreground",
+                          "hover:shadow-[0_0_12px_rgba(255,255,255,0.05)]",
+                          "active:scale-95",
+                          isBusy && "opacity-50 cursor-not-allowed"
+                        )}
+                      >
+                        <suggestion.icon className="w-4 h-4" />
+                        <span>{suggestion.label}</span>
+                      </button>
+                    ))}
+                  </div>
 
-              {/* Input Area */}
-              <div className="relative flex items-center">
-                <textarea
-                  ref={textareaRef}
-                  value={inputValue}
-                  onChange={(e) => {
-                    const nextValue = e.target.value;
-                    setInputValue(nextValue);
-                    if (inputSource === "voice" && nextValue.trim() === "") {
-                      setInputSource("text");
-                    }
-                  }}
-                  onKeyDown={handleKeyDown}
-                  placeholder={placeholder}
-                  disabled={isBusy}
-                  rows={2}
-                  className={cn(
-                    "w-full resize-none rounded-2xl px-4 py-3",
-                    inputValue.trim() ? "pr-16" : "pr-28",
-                    "bg-white/[0.04] border border-white/[0.08]",
-                    "text-foreground placeholder:text-muted-foreground/60",
-                    "focus:outline-none focus:border-primary/30 focus:bg-white/[0.06]",
-                    "focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)]",
-                    "transition-all duration-200",
-                    isBusy && "opacity-50 cursor-not-allowed"
-                  )}
-                />
-
-                {/* Action Buttons - centered vertically */}
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                  {/* Mic Button - hidden when user is typing */}
-                  {!inputValue.trim() && (
-                    <button
-                      onClick={handleMicClick}
-                      disabled={isBusy && !isRecording}
+                  {/* Input Area */}
+                  <div className="relative flex items-center">
+                    <textarea
+                      ref={textareaRef}
+                      value={inputValue}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        setInputValue(nextValue);
+                        if (inputSource === "voice" && nextValue.trim() === "") {
+                          setInputSource("text");
+                        }
+                      }}
+                      onKeyDown={handleKeyDown}
+                      placeholder={placeholder}
+                      disabled={isBusy}
+                      rows={2}
                       className={cn(
-                        "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
-                        isRecording
-                          ? "bg-destructive text-white animate-pulse"
-                          : "bg-white/[0.06] text-muted-foreground hover:bg-white/[0.1] hover:text-foreground",
-                        isBusy && !isRecording && "opacity-50 cursor-not-allowed"
+                        "w-full resize-none rounded-2xl px-4 py-3",
+                        inputValue.trim() ? "pr-16" : "pr-28",
+                        "bg-white/[0.04] border border-white/[0.08]",
+                        "text-foreground placeholder:text-muted-foreground/60",
+                        "focus:outline-none focus:border-primary/30 focus:bg-white/[0.06]",
+                        "focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)]",
+                        "transition-all duration-200",
+                        isBusy && "opacity-50 cursor-not-allowed"
                       )}
-                    >
-                      {isRecording ? (
-                        <Square className="w-4 h-4 fill-current" />
-                      ) : (
-                        <Mic className="w-4 h-4" />
+                    />
+
+                    {/* Action Buttons - centered vertically */}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      {/* Mic Button - hidden when user is typing */}
+                      {!inputValue.trim() && (
+                        <button
+                          onClick={handleMicClick}
+                          disabled={isBusy && !isRecording}
+                          className={cn(
+                            "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
+                            isRecording
+                              ? "bg-destructive text-white animate-pulse"
+                              : "bg-white/[0.06] text-muted-foreground hover:bg-white/[0.1] hover:text-foreground",
+                            isBusy && !isRecording && "opacity-50 cursor-not-allowed"
+                          )}
+                        >
+                          {isRecording ? (
+                            <Square className="w-4 h-4 fill-current" />
+                          ) : (
+                            <Mic className="w-4 h-4" />
+                          )}
+                        </button>
                       )}
-                    </button>
+
+                      {/* Send Button */}
+                      <button
+                        onClick={handleTextSubmit}
+                        disabled={isBusy || !inputValue.trim()}
+                        className={cn(
+                          "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
+                          inputValue.trim()
+                            ? "bg-primary text-primary-foreground hover:shadow-[0_0_16px_rgba(34,197,94,0.3)]"
+                            : "bg-white/[0.06] text-muted-foreground",
+                          (isBusy || !inputValue.trim()) && "opacity-50 cursor-not-allowed"
+                        )}
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Status Text */}
+                  {statusText && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                      <span>{statusText}</span>
+                    </div>
                   )}
-
-                  {/* Send Button */}
-                  <button
-                    onClick={handleTextSubmit}
-                    disabled={isBusy || !inputValue.trim()}
-                    className={cn(
-                      "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
-                      inputValue.trim()
-                        ? "bg-primary text-primary-foreground hover:shadow-[0_0_16px_rgba(34,197,94,0.3)]"
-                        : "bg-white/[0.06] text-muted-foreground",
-                      (isBusy || !inputValue.trim()) && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Status Text */}
-              {statusText && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                  <span>{statusText}</span>
-                </div>
+                </>
               )}
             </div>
           </div>
