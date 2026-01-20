@@ -38,8 +38,9 @@ export async function POST(request: NextRequest) {
     const transcriptText = typeof transcription === "string"
       ? transcription
       : (transcription as unknown as { text?: string }).text || "";
+    const cleanedTranscript = transcriptText.trimEnd();
 
-    return successResponse({ transcript: transcriptText });
+    return successResponse({ transcript: cleanedTranscript });
   } catch (error) {
     console.error("Transcription error:", error);
 
