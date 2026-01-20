@@ -158,7 +158,6 @@ export default function WorkoutDetailPage() {
           sessionId,
           ...setData,
           performedAt: new Date().toISOString(),
-          transcriptRaw: null,
         }),
       });
 
