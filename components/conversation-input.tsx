@@ -168,6 +168,7 @@ export function ConversationInput({
         setIsExpanded(true);
         setTimeout(() => textareaRef.current?.focus(), 50);
         setState("idle");
+        resetRecorder();
       } catch (error) {
         console.error("Transcription error:", error);
         toast.error("Failed to transcribe audio. Please try again.");
