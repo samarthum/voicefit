@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Mic, Send, Square, ChevronDown, Sparkles, UtensilsCrossed, Dumbbell, Footprints, Scale, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useVoiceRecorder } from "@/hooks/use-voice-recorder";
-import { TranscriptEditorDialog } from "@/components/transcript-editor-dialog";
 import { MealInterpretationDialog } from "@/components/meal-interpretation-dialog";
 import { WorkoutSetInterpretationDialog } from "@/components/workout-set-interpretation-dialog";
 import { MetricInterpretationDialog } from "@/components/metric-interpretation-dialog";
@@ -81,9 +80,9 @@ export function ConversationInput({
 }: ConversationInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [state, setState] = useState<RecordingState>("idle");
-  const [transcript, setTranscript] = useState("");
   const [currentTranscript, setCurrentTranscript] = useState("");
   const [currentSource, setCurrentSource] = useState<ConversationSource>("text");
+  const [inputSource, setInputSource] = useState<ConversationSource>("text");
   const [mealInterpretation, setMealInterpretation] = useState<MealInterpretation | null>(null);
   const [workoutInterpretation, setWorkoutInterpretation] =
     useState<WorkoutSetInterpretation | null>(null);
@@ -118,9 +117,9 @@ export function ConversationInput({
 
   const resetAll = useCallback(() => {
     setState("idle");
-    setTranscript("");
     setCurrentTranscript("");
     setInputValue("");
+    setInputSource("text");
     setMealInterpretation(null);
     setWorkoutInterpretation(null);
     setMetricInterpretation(null);
@@ -164,8 +163,12 @@ export function ConversationInput({
           throw new Error(data.error || "Failed to transcribe");
         }
 
-        setTranscript(data.data.transcript);
-        setState("editing");
+        setInputValue(data.data.transcript);
+        setInputSource("voice");
+        setIsExpanded(true);
+        setTimeout(() => textareaRef.current?.focus(), 50);
+        setState("idle");
+        resetRecorder();
       } catch (error) {
         console.error("Transcription error:", error);
         toast.error("Failed to transcribe audio. Please try again.");
@@ -308,8 +311,8 @@ export function ConversationInput({
     const trimmed = inputValue.trim();
     if (!trimmed) return;
     setInputValue("");
-    await handleTranscriptSubmit(trimmed, "text");
-  }, [handleTranscriptSubmit, inputValue]);
+    await handleTranscriptSubmit(trimmed, inputSource);
+  }, [handleTranscriptSubmit, inputSource, inputValue]);
 
   const handleMealSave = useCallback(
     async (mealData: { mealType: string; description: string; calories: number }) => {
@@ -711,7 +714,13 @@ export function ConversationInput({
                 <textarea
                   ref={textareaRef}
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e) => {
+                    const nextValue = e.target.value;
+                    setInputValue(nextValue);
+                    if (inputSource === "voice" && nextValue.trim() === "") {
+                      setInputSource("text");
+                    }
+                  }}
                   onKeyDown={handleKeyDown}
                   placeholder={placeholder}
                   disabled={isBusy}
@@ -781,17 +790,6 @@ export function ConversationInput({
       </div>
 
       {/* Dialogs */}
-      <TranscriptEditorDialog
-        open={state === "editing" || state === "transcribing"}
-        onOpenChange={(open) => {
-          if (!open) resetAll();
-        }}
-        transcript={transcript}
-        isLoading={state === "transcribing"}
-        onContinue={(text) => handleTranscriptSubmit(text, "voice")}
-        onCancel={resetAll}
-      />
-
       <MealInterpretationDialog
         key={
           mealInterpretation
