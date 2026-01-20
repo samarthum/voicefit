@@ -163,10 +163,18 @@ export function ConversationInput({
           throw new Error(data.error || "Failed to transcribe");
         }
 
-        setInputValue(data.data.transcript);
+        const transcript = data.data.transcript;
+        setInputValue(transcript);
         setInputSource("voice");
         setIsExpanded(true);
-        setTimeout(() => textareaRef.current?.focus(), 50);
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+            // Set cursor position to the end of the text
+            const length = transcript.length;
+            textareaRef.current.setSelectionRange(length, length);
+          }
+        }, 50);
         setState("idle");
         resetRecorder();
       } catch (error) {
