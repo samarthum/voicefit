@@ -18,7 +18,7 @@ This is a Next.js 16 health tracking app with voice-first input for meals and wo
 - **Frontend**: Next.js App Router, React 19, Tailwind CSS 4, Radix UI components
 - **Backend**: Next.js API routes, Prisma ORM with Neon (serverless PostgreSQL)
 - **Auth**: Clerk (`@clerk/nextjs`)
-- **AI Services**: OpenAI for audio transcription (`gpt-4o-mini-transcribe`), Claude Haiku 4.5 for interpretation (`claude-3-5-haiku-20241022`)
+- **AI Services**: OpenAI for audio transcription (`gpt-4o-mini-transcribe`), Claude Haiku 4.5 for interpretation (`claude-haiku-4-5`)
 
 ### Data Flow
 1. User records voice input via `MicRecordButton` component

@@ -129,7 +129,7 @@ export async function interpretMeal({
   const userMessage = `[${contextParts.join(", ")}] ${transcript}`;
 
   let response = await anthropic.messages.create({
-    model: "claude-3-5-haiku-20241022",
+    model: "claude-haiku-4-5",
     max_tokens: 1024,
     system: MEAL_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userMessage }],
@@ -191,7 +191,7 @@ export async function interpretMeal({
 
       // Continue conversation with tool result
       response = await anthropic.messages.create({
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-haiku-4-5",
         max_tokens: 1024,
         system: MEAL_SYSTEM_PROMPT,
         messages: [
@@ -243,7 +243,7 @@ interface InterpretWorkoutSetInput {
 
 export async function interpretWorkoutSet({ transcript }: InterpretWorkoutSetInput) {
   const response = await anthropic.messages.create({
-    model: "claude-3-5-haiku-20241022",
+    model: "claude-haiku-4-5",
     max_tokens: 1024,
     system: WORKOUT_SYSTEM_PROMPT,
     messages: [{ role: "user", content: transcript }],
