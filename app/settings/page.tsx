@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTheme } from "next-themes";
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BottomNav } from "@/components/bottom-nav";
-import { Activity, Loader2, Target, User } from "lucide-react";
+import { Activity, Loader2, Moon, Sun, Target, User } from "lucide-react";
 import { toast, Toaster } from "sonner";
 
 interface FitbitStatus {
@@ -50,9 +51,11 @@ function SettingsPageContent() {
   const [fitbitStatus, setFitbitStatus] = useState<FitbitStatus | null>(null);
   const [isFitbitLoading, setIsFitbitLoading] = useState(true);
   const [isFitbitDisconnecting, setIsFitbitDisconnecting] = useState(false);
+  const [isThemeMounted, setIsThemeMounted] = useState(false);
 
   const [calorieGoal, setCalorieGoal] = useState("");
   const [stepGoal, setStepGoal] = useState("");
+  const { theme, setTheme } = useTheme();
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -95,6 +98,10 @@ function SettingsPageContent() {
     fetchSettings();
     fetchFitbitStatus();
   }, [fetchSettings, fetchFitbitStatus]);
+
+  useEffect(() => {
+    setIsThemeMounted(true);
+  }, []);
 
   useEffect(() => {
     const fitbitStatusParam = searchParams.get("fitbit");
@@ -183,6 +190,8 @@ function SettingsPageContent() {
   const fitbitLastSync = fitbitStatus?.lastSyncAt
     ? new Date(fitbitStatus.lastSyncAt).toLocaleString()
     : "Not synced yet";
+  const isDarkMode = isThemeMounted ? theme === "dark" : false;
+  const nextThemeLabel = isDarkMode ? "Light" : "Dark";
 
   return (
     <div className="min-h-screen bg-background pb-28">
@@ -204,6 +213,44 @@ function SettingsPageContent() {
           </div>
         ) : (
           <div className="space-y-6 animate-fade-up">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 font-display text-xl">
+                  <div className="p-2 rounded-xl bg-secondary/10">
+                    {isDarkMode ? (
+                      <Moon className="h-5 w-5 text-secondary" />
+                    ) : (
+                      <Sun className="h-5 w-5 text-secondary" />
+                    )}
+                  </div>
+                  Appearance
+                </CardTitle>
+                <CardDescription>
+                  Toggle between light and dark mode
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {isDarkMode ? "Dark mode" : "Light mode"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Choose the palette that feels best for you.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => setTheme(isDarkMode ? "light" : "dark")}
+                    disabled={!isThemeMounted}
+                  >
+                    Switch to {nextThemeLabel} mode
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 font-display text-xl">

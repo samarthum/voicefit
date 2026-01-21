@@ -590,19 +590,15 @@ export function ConversationInput({
         className={cn(
           "relative overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
           // Glass morphism base
-          "bg-[#0d0d0f]/90 backdrop-blur-2xl",
+          "bg-card/95 backdrop-blur-2xl dark:bg-[#0d0d0f]/90",
           // Border with glow
-          "border border-white/[0.08]",
-          "shadow-[0_-8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]",
+          "border border-border/70 dark:border-white/[0.08]",
           // Shape
-          isExpanded ? "rounded-[28px]" : "rounded-full"
+          isExpanded ? "rounded-[28px]" : "rounded-full",
+          isExpanded
+            ? "shadow-[0_-8px_28px_rgba(15,23,42,0.12)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.4)]"
+            : "shadow-[0_-4px_18px_rgba(15,23,42,0.1)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)]"
         )}
-        style={{
-          // Subtle edge glow
-          boxShadow: isExpanded
-            ? "0 -8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 1px rgba(34,197,94,0.1)"
-            : "0 -4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px rgba(34,197,94,0.15)",
-        }}
       >
         {/* Ambient glow effect behind mic button */}
         <div
@@ -688,14 +684,14 @@ export function ConversationInput({
                 </div>
                 <button
                   onClick={() => setIsExpanded(false)}
-                  className="flex items-center justify-center w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-muted/60 hover:bg-muted transition-colors dark:bg-white/5 dark:hover:bg-white/10"
                 >
                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
 
               {isAnalyzing ? (
-                <div className="flex items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-10 text-center">
+                <div className="flex items-center justify-center rounded-2xl border border-border/60 bg-muted/60 px-4 py-10 text-center dark:border-white/[0.08] dark:bg-white/[0.04]">
                   <span className="text-lg font-semibold text-foreground/90 animate-pulse">
                     Analyzing...
                   </span>
@@ -711,11 +707,11 @@ export function ConversationInput({
                         disabled={isBusy}
                         className={cn(
                           "flex items-center gap-2 px-3 py-2 rounded-full shrink-0",
-                          "bg-white/[0.04] border border-white/[0.06]",
+                          "bg-muted/60 border border-border/60 dark:bg-white/[0.04] dark:border-white/[0.06]",
                           "text-sm text-muted-foreground",
                           "transition-all duration-200",
-                          "hover:bg-white/[0.08] hover:border-white/[0.1] hover:text-foreground",
-                          "hover:shadow-[0_0_12px_rgba(255,255,255,0.05)]",
+                          "hover:bg-muted hover:border-border/80 hover:text-foreground dark:hover:bg-white/[0.08] dark:hover:border-white/[0.1]",
+                          "hover:shadow-[0_0_12px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_0_12px_rgba(255,255,255,0.05)]",
                           "active:scale-95",
                           isBusy && "opacity-50 cursor-not-allowed"
                         )}
@@ -745,10 +741,10 @@ export function ConversationInput({
                       className={cn(
                         "w-full resize-none rounded-2xl px-4 py-3",
                         inputValue.trim() ? "pr-16" : "pr-28",
-                        "bg-white/[0.04] border border-white/[0.08]",
+                        "bg-background border border-border/70 dark:bg-white/[0.04] dark:border-white/[0.08]",
                         "text-foreground placeholder:text-muted-foreground/60",
-                        "focus:outline-none focus:border-primary/30 focus:bg-white/[0.06]",
-                        "focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)]",
+                        "focus:outline-none focus:border-primary/30 focus:bg-background",
+                        "focus:shadow-[0_0_0_3px_rgba(22,163,74,0.12)] dark:focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)]",
                         "transition-all duration-200",
                         isBusy && "opacity-50 cursor-not-allowed"
                       )}
@@ -765,7 +761,7 @@ export function ConversationInput({
                             "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
                             isRecording
                               ? "bg-destructive text-white animate-pulse"
-                              : "bg-white/[0.06] text-muted-foreground hover:bg-white/[0.1] hover:text-foreground",
+                              : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground dark:bg-white/[0.06] dark:hover:bg-white/[0.1]",
                             isBusy && !isRecording && "opacity-50 cursor-not-allowed"
                           )}
                         >
@@ -784,8 +780,8 @@ export function ConversationInput({
                         className={cn(
                           "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
                           inputValue.trim()
-                            ? "bg-primary text-primary-foreground hover:shadow-[0_0_16px_rgba(34,197,94,0.3)]"
-                            : "bg-white/[0.06] text-muted-foreground",
+                            ? "bg-primary text-primary-foreground hover:shadow-[0_0_16px_rgba(22,163,74,0.25)]"
+                            : "bg-muted/60 text-muted-foreground dark:bg-white/[0.06]",
                           (isBusy || !inputValue.trim()) && "opacity-50 cursor-not-allowed"
                         )}
                       >

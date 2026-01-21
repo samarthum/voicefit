@@ -93,11 +93,12 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
   ] as [number, number];
 
   const tooltipStyle = {
-    backgroundColor: "#1a1a1d",
-    border: "1px solid rgba(255, 255, 255, 0.15)",
+    backgroundColor: "#f8fafc",
+    border: "1px solid rgba(15, 23, 42, 0.12)",
     borderRadius: "12px",
-    boxShadow: "0 10px 40px -5px rgba(0,0,0,0.5)",
+    boxShadow: "0 10px 40px -5px rgba(15, 23, 42, 0.2)",
     padding: "8px 12px",
+    color: "#1f2937",
   };
 
   return (
@@ -166,8 +167,8 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
                   />
                   <Tooltip
                     contentStyle={tooltipStyle}
-                    labelStyle={{ color: "#fafafa", fontWeight: 500 }}
-                    itemStyle={{ color: "#a1a1aa" }}
+                    labelStyle={{ color: "#1f2937", fontWeight: 600 }}
+                    itemStyle={{ color: "#6b7280" }}
                     cursor={{ stroke: "transparent" }}
                     formatter={(value) => [
                       `${Number(value).toLocaleString()} kcal`,
@@ -210,6 +211,8 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
                   />
                   <Tooltip
                     contentStyle={tooltipStyle}
+                    labelStyle={{ color: "#1f2937", fontWeight: 600 }}
+                    itemStyle={{ color: "#6b7280" }}
                     cursor={{ stroke: "transparent" }}
                     formatter={(value) => [
                       value ? Number(value).toLocaleString() : "---",
@@ -258,6 +261,8 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
                   />
                   <Tooltip
                     contentStyle={tooltipStyle}
+                    labelStyle={{ color: "#1f2937", fontWeight: 600 }}
+                    itemStyle={{ color: "#6b7280" }}
                     cursor={{ stroke: "transparent" }}
                     formatter={(value) => [
                       value ? `${value} kg` : "---",
@@ -267,10 +272,10 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
                   <Line
                     type="monotone"
                     dataKey="weight"
-                    stroke="var(--color-secondary)"
+                    stroke="#1d4ed8"
                     strokeWidth={3}
-                    dot={{ fill: "var(--color-secondary)", strokeWidth: 0, r: 4 }}
-                    activeDot={{ r: 6, fill: "var(--color-secondary)" }}
+                    dot={{ fill: "#1d4ed8", strokeWidth: 0, r: 4 }}
+                    activeDot={{ r: 6, fill: "#1d4ed8" }}
                     connectNulls
                   />
                 </LineChart>
@@ -291,8 +296,8 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
                     <div
                       className={`flex h-8 w-8 items-center justify-center rounded-full border ${
                         hasWorkout
-                          ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-300"
-                          : "border-border/60 bg-muted/40 text-muted-foreground"
+                          ? "border-emerald-600/60 bg-emerald-500/15 text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-300"
+                          : "border-border/70 bg-muted/60 text-muted-foreground"
                       }`}
                     >
                       {hasWorkout ? <Check className="h-4 w-4" /> : <span className="text-xs">—</span>}
