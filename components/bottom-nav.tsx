@@ -21,13 +21,13 @@ export function BottomNav({ className }: BottomNavProps) {
   const pathname = usePathname();
 
   return (
-    <nav className={cn("fixed bottom-4 left-4 right-4 z-50", className)}>
+    <nav className={cn("fixed inset-x-0 bottom-0 z-50", className)}>
       <div
         className={cn(
-          "mx-auto max-w-lg",
+          "w-full",
           "bg-card/80",
           "backdrop-blur-xl",
-          "rounded-2xl border border-border/60",
+          "rounded-t-2xl border border-border/60",
           "shadow-[0_10px_30px_rgba(0,0,0,0.35)]",
           "px-2"
         )}
