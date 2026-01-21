@@ -10,7 +10,7 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
         "bg-gradient-to-br from-card via-card to-card/95",
         "text-card-foreground flex flex-col gap-6",
         "rounded-2xl border border-border/60",
-        "py-6 shadow-lg shadow-primary/5",
+        "py-7 shadow-lg shadow-primary/8",
         "relative overflow-hidden",
         "transition-shadow duration-300 hover:shadow-xl hover:shadow-primary/8",
         className
@@ -37,7 +37,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-title"
-      className={cn("leading-none font-semibold tracking-tight", className)}
+      className={cn("text-lg leading-tight font-semibold tracking-tight", className)}
       {...props}
     />
   )
@@ -47,7 +47,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-muted-foreground text-[0.95rem]", className)}
       {...props}
     />
   )

@@ -62,27 +62,27 @@
 
   /* Core surfaces */
   --background: #f8fafc;
-  --foreground: #0f172a;
+  --foreground: #1f2937;
 
   /* Card surfaces */
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #1f2937;
 
   /* Popover/Dialogs */
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --popover-foreground: #1f2937;
 
   /* Primary (voice/action) */
-  --primary: #22c55e;
-  --primary-foreground: #052e16;
+  --primary: #16a34a;
+  --primary-foreground: #f0fdf4;
 
   /* Secondary (accented UI) */
   --secondary: #3b82f6;
-  --secondary-foreground: #eff6ff;
+  --secondary-foreground: #eef2ff;
 
   /* Muted */
   --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --muted-foreground: #6b7280;
 
   /* Accent (warm highlight) */
   --accent: #f97316;
@@ -94,7 +94,7 @@
   /* Borders & Inputs */
   --border: rgba(15, 23, 42, 0.12);
   --input: rgba(15, 23, 42, 0.08);
-  --ring: rgba(34, 197, 94, 0.25);
+  --ring: rgba(22, 163, 74, 0.25);
 
   /* Chart Colors */
   --chart-1: #f97316;
@@ -115,11 +115,11 @@
 
   /* Sidebar */
   --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #22c55e;
-  --sidebar-primary-foreground: #052e16;
+  --sidebar-foreground: #1f2937;
+  --sidebar-primary: #16a34a;
+  --sidebar-primary-foreground: #f0fdf4;
   --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0f172a;
+  --sidebar-accent-foreground: #1f2937;
   --sidebar-border: rgba(15, 23, 42, 0.1);
   --sidebar-ring: rgba(34, 197, 94, 0.25);
 }
