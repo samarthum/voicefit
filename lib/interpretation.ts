@@ -1,8 +1,7 @@
 "use server";
 
-import { Type } from "@google/genai";
 import { prisma } from "@/lib/db";
-import { genAI } from "@/lib/gemini";
+import { anthropic } from "@/lib/claude";
 import { EXERCISES } from "@/lib/exercises";
 import { mealInterpretationSchema, workoutSetInterpretationSchema } from "@/lib/validations";
 
@@ -32,26 +31,26 @@ You MUST respond with valid JSON matching this exact schema:
 
 Only output the JSON object, no other text.`;
 
-const searchPreviousMealsFunction = {
+const searchPreviousMealsTool = {
   name: "searchPreviousMeals",
   description:
     "Search for the user's previous meals to reference when they mention eating the same thing as before. Returns meals from the past 7 days.",
-  parameters: {
-    type: Type.OBJECT,
+  input_schema: {
+    type: "object" as const,
     properties: {
       daysAgo: {
-        type: Type.INTEGER,
+        type: "integer" as const,
         description:
           "Number of days in the past to search (1 for yesterday, 2 for day before, etc.). Defaults to 1.",
       },
       mealType: {
-        type: Type.STRING,
+        type: "string" as const,
         description:
           "Filter by meal type: breakfast, lunch, dinner, or snack. Optional.",
         enum: ["breakfast", "lunch", "dinner", "snack"],
       },
     },
-    required: [],
+    required: [] as string[],
   },
 };
 
@@ -128,23 +127,21 @@ export async function interpretMeal({
   }
 
   const userMessage = `[${contextParts.join(", ")}] ${transcript}`;
-  const prompt = `${MEAL_SYSTEM_PROMPT}\n\nUser input: ${userMessage}`;
 
-  let result = await genAI.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: prompt,
-    config: {
-      tools: [{ functionDeclarations: [searchPreviousMealsFunction] }],
-    },
+  let response = await anthropic.messages.create({
+    model: "claude-3-5-haiku-20241022",
+    max_tokens: 1024,
+    system: MEAL_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userMessage }],
+    tools: [searchPreviousMealsTool],
   });
 
-  const functionCalls = result.functionCalls;
+  // Handle tool use (function calling)
+  if (response.stop_reason === "tool_use") {
+    const toolUse = response.content.find((block) => block.type === "tool_use");
 
-  if (functionCalls && functionCalls.length > 0) {
-    const functionCall = functionCalls[0];
-
-    if (functionCall.name === "searchPreviousMeals") {
-      const args = functionCall.args as { daysAgo?: number; mealType?: string };
+    if (toolUse && toolUse.type === "tool_use" && toolUse.name === "searchPreviousMeals") {
+      const args = toolUse.input as { daysAgo?: number; mealType?: string };
       const daysAgo = args.daysAgo || 1;
       const mealTypeFilter = args.mealType;
 
@@ -192,25 +189,34 @@ export async function interpretMeal({
         calories: meal.calories,
       }));
 
-      result = await genAI.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [
-          { text: prompt },
+      // Continue conversation with tool result
+      response = await anthropic.messages.create({
+        model: "claude-3-5-haiku-20241022",
+        max_tokens: 1024,
+        system: MEAL_SYSTEM_PROMPT,
+        messages: [
+          { role: "user", content: userMessage },
+          { role: "assistant", content: response.content },
           {
-            functionResponse: {
-              name: functionCall.name,
-              response: { meals: functionResponse },
-            },
+            role: "user",
+            content: [
+              {
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: JSON.stringify({ meals: functionResponse }),
+              },
+            ],
           },
         ],
-        config: {
-          tools: [{ functionDeclarations: [searchPreviousMealsFunction] }],
-        },
+        tools: [searchPreviousMealsTool],
       });
     }
   }
 
-  const content = result.text;
+  // Extract text from response
+  const textBlock = response.content.find((block) => block.type === "text");
+  const content = textBlock && textBlock.type === "text" ? textBlock.text : null;
+
   if (!content) {
     throw new Error("Failed to interpret meal. Please try again.");
   }
@@ -236,13 +242,16 @@ interface InterpretWorkoutSetInput {
 }
 
 export async function interpretWorkoutSet({ transcript }: InterpretWorkoutSetInput) {
-  const prompt = `${WORKOUT_SYSTEM_PROMPT}\n\nUser input: ${transcript}`;
-  const result = await genAI.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: prompt,
+  const response = await anthropic.messages.create({
+    model: "claude-3-5-haiku-20241022",
+    max_tokens: 1024,
+    system: WORKOUT_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: transcript }],
   });
 
-  const content = result.text;
+  const textBlock = response.content.find((block) => block.type === "text");
+  const content = textBlock && textBlock.type === "text" ? textBlock.text : null;
+
   if (!content) {
     throw new Error("Failed to interpret workout set. Please try again.");
   }
