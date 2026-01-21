@@ -18,12 +18,12 @@ This is a Next.js 16 health tracking app with voice-first input for meals and wo
 - **Frontend**: Next.js App Router, React 19, Tailwind CSS 4, Radix UI components
 - **Backend**: Next.js API routes, Prisma ORM with Neon (serverless PostgreSQL)
 - **Auth**: Clerk (`@clerk/nextjs`)
-- **AI Services**: OpenAI for audio transcription (`gpt-4o-mini-transcribe`), Google Gemini for interpretation (`gemini-3-flash-preview`)
+- **AI Services**: OpenAI for audio transcription (`gpt-4o-mini-transcribe`), Claude Haiku 4.5 for interpretation (`claude-haiku-4-5`)
 
 ### Data Flow
 1. User records voice input via `MicRecordButton` component
 2. Audio sent to `/api/transcribe` (OpenAI transcription)
-3. Transcript sent to `/api/interpret/meal` or `/api/interpret/workout-set` (Gemini interpretation)
+3. Transcript sent to `/api/interpret/meal` or `/api/interpret/workout-set` (Claude interpretation)
 4. User confirms/edits interpretation in dialog
 5. Data saved via `/api/meals` or `/api/workout-sets`
 
@@ -49,7 +49,7 @@ All API routes use helpers from `lib/api-helpers.ts`:
 ### Environment Variables
 - `DATABASE_URL` - Neon PostgreSQL connection string
 - `OPENAI_API_KEY` - For audio transcription
-- `GOOGLE_API_KEY` - For Gemini interpretation
+- `ANTHROPIC_API_KEY` - For Claude interpretation
 - Clerk keys for authentication
 - `FITBIT_CLIENT_ID` - Fitbit OAuth client ID
 - `FITBIT_CLIENT_SECRET` - Fitbit OAuth client secret

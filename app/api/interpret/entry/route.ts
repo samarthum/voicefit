@@ -13,7 +13,7 @@ import {
 import { interpretMeal, interpretWorkoutSet } from "@/lib/interpretation";
 import { prisma } from "@/lib/db";
 import { getLastNDays } from "@/lib/timezone";
-import { genAI } from "@/lib/gemini";
+import { anthropic } from "@/lib/claude";
 
 const CLASSIFIER_PROMPT = `You are an intent classifier for a health tracking app.
 
@@ -191,12 +191,15 @@ async function answerQuestion(userId: string, question: string, timezone?: strin
     .replace("{{metrics}}", context.metrics)
     .replace("{{workouts}}", context.workouts);
 
-  const response = await genAI.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: prompt,
+  const response = await anthropic.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 512,
+    messages: [{ role: "user", content: prompt }],
   });
 
-  const text = response.text?.trim();
+  const textBlock = response.content.find((block) => block.type === "text");
+  const text = textBlock && textBlock.type === "text" ? textBlock.text.trim() : null;
+
   if (!text) {
     throw new Error("Failed to answer question. Please try again.");
   }
@@ -221,12 +224,17 @@ export async function POST(request: NextRequest) {
 
     const { transcript, timezone } = parseResult.data;
 
-    const classificationResult = await genAI.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `${CLASSIFIER_PROMPT}\n\nUser input: ${transcript}`,
+    const classificationResult = await anthropic.messages.create({
+      model: "claude-haiku-4-5",
+      max_tokens: 512,
+      system: CLASSIFIER_PROMPT,
+      messages: [{ role: "user", content: transcript }],
     });
 
-    const classificationText = classificationResult.text;
+    const textBlock = classificationResult.content.find((block) => block.type === "text");
+    const classificationText =
+      textBlock && textBlock.type === "text" ? textBlock.text : null;
+
     if (!classificationText) {
       return errorResponse("Failed to classify entry. Please try again.", 500);
     }
