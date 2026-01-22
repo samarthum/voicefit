@@ -1,0 +1,72 @@
+{
+  "expo": {
+    "name": "VoiceFit",
+    "slug": "voicefit",
+    "owner": "samarthmamadapur",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "voicefit",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.voicefit.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "VoiceFit needs access to your microphone to record voice entries for meals and workouts.",
+        "NSHealthShareUsageDescription": "VoiceFit uses your health data to track steps and sync with your daily goals.",
+        "NSHealthUpdateUsageDescription": "VoiceFit can update your health data with workout information."
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": []
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.voicefit.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACTIVITY_RECOGNITION"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow VoiceFit to access your microphone for voice logging."
+        }
+      ],
+      "expo-asset",
+      "expo-font",
+      "expo-sqlite",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}

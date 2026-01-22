@@ -9,7 +9,13 @@
       "Bash(BUN_CONFIG_REGISTRY=https://registry.npmjs.org/ bunx:*)",
       "Bash(bun run build:*)",
       "Bash(find:*)",
-      "Skill(frontend-design)"
+      "Skill(frontend-design)",
+      "Skill(expo-app-design:building-native-ui)",
+      "Skill(expo-app-design:expo-tailwind-setup)",
+      "Skill(expo-app-design:expo-dev-client)",
+      "Bash(bun install:*)",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs"
     ]
   }
 }
