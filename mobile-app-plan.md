@@ -208,26 +208,37 @@
                                                                                                                                                                                                                                                                                
   ---                                                                                                                                                                                                                                                                          
                                                                                                                                                                                                                                                                                
-  ## 7. Authentication Flow                                                                                                                                                                                                                                                    
-                                                                                                                                                                                                                                                                               
-  Using `@clerk/clerk-expo` with `expo-secure-store` for token storage:                                                                                                                                                                                                        
-                                                                                                                                                                                                                                                                               
-  ```tsx                                                                                                                                                                                                                                                                       
-  // app/_layout.tsx                                                                                                                                                                                                                                                           
-  <ClerkProvider tokenCache={secureStoreCache}>                                                                                                                                                                                                                                
-  <AuthGate>                                                                                                                                                                                                                                                                   
-  <QueryClientProvider>                                                                                                                                                                                                                                                        
-  <Slot />                                                                                                                                                                                                                                                                     
-  </QueryClientProvider>                                                                                                                                                                                                                                                       
-  </AuthGate>                                                                                                                                                                                                                                                                  
-  </ClerkProvider>                                                                                                                                                                                                                                                             
-  ```                                                                                                                                                                                                                                                                          
-                                                                                                                                                                                                                                                                               
-  Sign-in options:                                                                                                                                                                                                                                                             
-  - Continue with Google (OAuth)                                                                                                                                                                                                                                               
-  - Continue with Apple (iOS only)                                                                                                                                                                                                                                             
-                                                                                                                                                                                                                                                                               
-  ---                                                                                                                                                                                                                                                                          
+## 7. Authentication Flow
+
+Using `@clerk/clerk-expo` with `expo-secure-store` for token storage:
+
+```tsx
+// app/_layout.tsx
+<ClerkProvider tokenCache={secureStoreCache}>
+<AuthGate>
+<QueryClientProvider>
+<Slot />
+</QueryClientProvider>
+</AuthGate>
+</ClerkProvider>
+```
+
+Sign-in options:
+- Continue with Google (OAuth)
+- Continue with Apple (iOS only)
+
+Expo Go OAuth redirect (implemented):
+- Added `expo-auth-session` and use `AuthSession.makeRedirectUri({ path: "oauth-native-callback" })`.
+- Clerk must allow the dev redirect URL (example):
+  - `exp://<LAN-IP>:<PORT>/--/oauth-native-callback`
+- For dev builds/standalone, also allow:
+  - `voicefit://oauth-native-callback`
+
+Notes:
+- `apps/mobile/app.json` includes `owner` for a stable Expo project identity.
+- OAuth flow uses `WebBrowser.openAuthSessionAsync` via Clerk; do not use the Expo AuthSession proxy URL directly.
+
+---
                                                                                                                                                                                                                                                                                
   ## 8. Offline Caching Strategy                                                                                                                                                                                                                                               
                                                                                                                                                                                                                                                                                
