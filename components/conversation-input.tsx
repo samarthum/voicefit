@@ -579,7 +579,13 @@ export function ConversationInput({
     } else {
       setInputValue(suggestion.value);
       setIsExpanded(true);
-      setTimeout(() => textareaRef.current?.focus(), 50);
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const length = suggestion.value.length;
+          textareaRef.current.setSelectionRange(length, length);
+        }
+      }, 50);
     }
   };
 
