@@ -86,11 +86,18 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
   const calorieValues = calorieChartData.map((d) => d.calories);
   const calorieMin = Math.min(0, calorieGoal, ...calorieValues);
   const calorieMax = Math.max(calorieGoal, ...calorieValues);
-  const caloriePadding = Math.max(150, Math.round((calorieMax - calorieMin) * 0.15));
-  const calorieDomain = [
-    Math.max(0, calorieMin - caloriePadding),
-    calorieMax + caloriePadding,
-  ] as [number, number];
+  const calorieRange = Math.max(1, calorieMax - calorieMin);
+  const calorieStepOptions = [50, 100, 150, 200, 250, 300, 400, 500, 750, 1000];
+  const calorieTargetStep = calorieRange / 4;
+  const calorieStep =
+    calorieStepOptions.find((step) => step >= calorieTargetStep) ?? calorieStepOptions.at(-1)!;
+  const calorieDomainMin = Math.max(0, Math.floor((calorieMin - calorieStep) / calorieStep) * calorieStep);
+  const calorieDomainMax = Math.ceil((calorieMax + calorieStep) / calorieStep) * calorieStep;
+  const calorieTicks: number[] = [];
+  for (let value = calorieDomainMin; value <= calorieDomainMax; value += calorieStep) {
+    calorieTicks.push(value);
+  }
+  const calorieDomain = [calorieDomainMin, calorieDomainMax] as [number, number];
 
   const tooltipStyle = {
     backgroundColor: "#f8fafc",
@@ -154,6 +161,7 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
                     axisLine={false}
                     width={60}
                     domain={calorieDomain}
+                    ticks={calorieTicks}
                     tickMargin={12}
                     tickFormatter={(value) =>
                       `${Number(value).toLocaleString()}`
@@ -164,6 +172,12 @@ export function WeeklyTrendsCard({ data, calorieGoal }: WeeklyTrendsCardProps) {
                     stroke="var(--color-border)"
                     strokeWidth={2}
                     strokeDasharray="3 3"
+                    label={{
+                      value: `${calorieGoal.toLocaleString()} kcal`,
+                      position: "right",
+                      fill: "var(--color-muted-foreground)",
+                      fontSize: 10,
+                    }}
                   />
                   <Tooltip
                     contentStyle={tooltipStyle}
