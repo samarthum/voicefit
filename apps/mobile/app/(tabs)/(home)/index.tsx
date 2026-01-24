@@ -43,10 +43,18 @@ export default function HomeScreen() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-background items-center justify-center px-6" edges={["bottom"]}>
-        <Text className="text-destructive text-center">
-          Failed to load dashboard. Pull to retry.
-        </Text>
+      <SafeAreaView className="flex-1 bg-background" edges={["bottom"]}>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <Text className="text-destructive text-center">
+            Failed to load dashboard. Pull to retry.
+          </Text>
+        </ScrollView>
       </SafeAreaView>
     );
   }

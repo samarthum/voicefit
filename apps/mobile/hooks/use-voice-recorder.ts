@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback } from "react";
-import { useAudioRecorder, RecordingPresets, AudioModule } from "expo-audio";
+import { useAudioRecorder, useAudioRecorderState, RecordingPresets, AudioModule } from "expo-audio";
 import type { RecordingState } from "@voicefit/shared/types";
 
 export function useVoiceRecorder() {
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(audioRecorder);
   const [state, setState] = useState<RecordingState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
@@ -92,8 +93,8 @@ export function useVoiceRecorder() {
     setState,
     error,
     recordingUri,
-    isRecording: audioRecorder.isRecording,
-    durationMs: audioRecorder.durationMillis,
+    isRecording: recorderState.isRecording,
+    durationMs: recorderState.durationMillis,
     startRecording,
     stopRecording,
     cancelRecording,

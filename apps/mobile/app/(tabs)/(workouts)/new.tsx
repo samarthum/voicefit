@@ -24,7 +24,7 @@ export default function NewWorkoutScreen() {
   const createMutation = useMutation({
     mutationFn: async (workoutTitle: string) => {
       const token = await getToken();
-      return apiClient<{ session: { id: string } }>("/api/workout-sessions", {
+      return apiClient<{ id: string }>("/api/workout-sessions", {
         method: "POST",
         body: { title: workoutTitle },
         token,
@@ -32,7 +32,7 @@ export default function NewWorkoutScreen() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["workout-sessions"] });
-      router.replace(`/(tabs)/(workouts)/${data.session.id}`);
+      router.replace(`/(tabs)/(workouts)/${data.id}`);
     },
   });
 

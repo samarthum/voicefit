@@ -31,20 +31,20 @@ export default function SettingsScreen() {
     queryKey: ["user-settings"],
     queryFn: async () => {
       const token = await getToken();
-      const response = await apiClient<{ user: UserSettings }>("/api/user", {
+      const response = await apiClient<UserSettings>("/api/user/settings", {
         token,
       });
-      setCalorieGoal(response.user.calorieGoal.toString());
-      setStepGoal(response.user.stepGoal.toString());
-      return response.user;
+      setCalorieGoal(response.calorieGoal.toString());
+      setStepGoal(response.stepGoal.toString());
+      return response;
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<UserSettings>) => {
       const token = await getToken();
-      return apiClient("/api/user", {
-        method: "PATCH",
+      return apiClient("/api/user/settings", {
+        method: "PUT",
         body: data,
         token,
       });

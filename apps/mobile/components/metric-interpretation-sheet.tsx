@@ -13,6 +13,11 @@ import type { MetricInterpretation } from "@voicefit/shared/types";
 
 import { apiClient } from "@/lib/api-client";
 
+// Validation constants matching API constraints
+const WEIGHT_MIN = 20;
+const WEIGHT_MAX = 300;
+const STEPS_MIN = 0;
+
 interface MetricInterpretationSheetProps {
   interpretation: MetricInterpretation;
   intent: "weight" | "steps";
@@ -30,6 +35,7 @@ export function MetricInterpretationSheet({
 }: MetricInterpretationSheetProps) {
   const { getToken } = useAuth();
   const [value, setValue] = useState(interpretation.value.toString());
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -53,8 +59,26 @@ export function MetricInterpretationSheet({
   });
 
   const handleSave = () => {
+    setValidationError(null);
     const numValue = intent === "weight" ? parseFloat(value) : parseInt(value, 10);
-    if (isNaN(numValue) || numValue < 0) return;
+
+    if (isNaN(numValue)) {
+      setValidationError("Please enter a valid number");
+      return;
+    }
+
+    if (intent === "weight") {
+      if (numValue < WEIGHT_MIN || numValue > WEIGHT_MAX) {
+        setValidationError(`Weight must be between ${WEIGHT_MIN} and ${WEIGHT_MAX} kg`);
+        return;
+      }
+    } else {
+      if (numValue < STEPS_MIN) {
+        setValidationError("Steps must be a positive number");
+        return;
+      }
+    }
+
     saveMutation.mutate();
   };
 
@@ -96,9 +120,16 @@ export function MetricInterpretationSheet({
       />
 
       {/* Unit Display */}
-      <Text className="text-muted-foreground text-center mb-4">
-        {isWeight ? "kilograms" : "steps"}
+      <Text className="text-muted-foreground text-center mb-2">
+        {isWeight ? `kilograms (${WEIGHT_MIN}-${WEIGHT_MAX} kg)` : "steps"}
       </Text>
+
+      {/* Validation Error */}
+      {validationError && (
+        <Text className="text-destructive text-center text-sm mb-2">
+          {validationError}
+        </Text>
+      )}
 
       {/* Assumptions */}
       {interpretation.assumptions.length > 0 && (

@@ -55,14 +55,14 @@ export function WorkoutSetInterpretationSheet({
   const createSessionMutation = useMutation({
     mutationFn: async () => {
       const token = await getToken();
-      return apiClient<{ session: { id: string } }>("/api/workout-sessions", {
+      return apiClient<{ id: string }>("/api/workout-sessions", {
         method: "POST",
         body: { title: `Workout ${new Date().toLocaleDateString()}` },
         token,
       });
     },
     onSuccess: (data) => {
-      setSelectedSessionId(data.session.id);
+      setSelectedSessionId(data.id);
     },
   });
 
@@ -100,7 +100,7 @@ export function WorkoutSetInterpretationSheet({
     if (!sessionId) {
       try {
         const result = await createSessionMutation.mutateAsync();
-        sessionId = result.session.id;
+        sessionId = result.id;
       } catch {
         Alert.alert("Error", "Failed to create workout session");
         return;
