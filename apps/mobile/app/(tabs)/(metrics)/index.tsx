@@ -36,11 +36,10 @@ export default function MetricsScreen() {
     queryKey: ["daily-metrics", startDate, endDate],
     queryFn: async () => {
       const token = await getToken();
-      const response = await apiClient<{ metrics: DailyMetric[] }>(
+      return apiClient<DailyMetric[]>(
         `/api/daily-metrics?startDate=${startDate}&endDate=${endDate}`,
         { token }
       );
-      return response.metrics;
     },
   });
 

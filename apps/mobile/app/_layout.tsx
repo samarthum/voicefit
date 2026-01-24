@@ -1,11 +1,27 @@
 import "../global.css";
 
 import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
+import {
+  useFonts,
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_600SemiBold,
+  DMSans_700Bold,
+} from "@expo-google-fonts/dm-sans";
+import {
+  InstrumentSerif_400Regular,
+  InstrumentSerif_400Regular_Italic,
+} from "@expo-google-fonts/instrument-serif";
+import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot, useRouter, useSegments } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+
+// Keep splash screen visible while fonts load
+SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +81,29 @@ function AuthGate() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    // DM Sans family
+    "DMSans-Regular": DMSans_400Regular,
+    "DMSans-Medium": DMSans_500Medium,
+    "DMSans-SemiBold": DMSans_600SemiBold,
+    "DMSans-Bold": DMSans_700Bold,
+    // Instrument Serif family
+    "InstrumentSerif-Regular": InstrumentSerif_400Regular,
+    "InstrumentSerif-Italic": InstrumentSerif_400Regular_Italic,
+    // JetBrains Mono
+    "JetBrainsMono-Regular": JetBrainsMono_400Regular,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <ClerkLoaded>

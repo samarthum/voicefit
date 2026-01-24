@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/clerk-expo";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import { View, Text, Pressable, Alert } from "react-native";
 import type { WorkoutSetDisplay } from "@voicefit/shared/types";
 
 import { apiClient } from "@/lib/api-client";
@@ -47,7 +47,7 @@ export function WorkoutSetCard({ set, setNumber, onDelete }: WorkoutSetCardProps
   };
 
   // Format the set details based on exercise type
-  const details = [];
+  const details: string[] = [];
   if (set.reps !== null) {
     details.push(`${set.reps} reps`);
   }
@@ -58,42 +58,59 @@ export function WorkoutSetCard({ set, setNumber, onDelete }: WorkoutSetCardProps
     details.push(`${set.durationMinutes} min`);
   }
 
+  const isCardio = set.exerciseType === "cardio";
+
   return (
-    <TouchableOpacity
-      onLongPress={handleDelete}
-      className="px-4 py-3 flex-row items-center justify-between"
-      activeOpacity={0.7}
-    >
-      <View className="flex-row items-center">
-        <View className="w-8 h-8 bg-muted rounded-full items-center justify-center mr-3">
-          <Text className="text-muted-foreground font-semibold text-sm">
-            {setNumber}
-          </Text>
-        </View>
-        <View>
-          <Text className="text-foreground font-medium">
-            {details.join(" × ") || "—"}
-          </Text>
-          {set.notes && (
-            <Text className="text-muted-foreground text-sm" numberOfLines={1}>
-              {set.notes}
-            </Text>
-          )}
-        </View>
-      </View>
-      <View
-        className={`px-2 py-1 rounded ${
-          set.exerciseType === "cardio" ? "bg-orange-100" : "bg-blue-100"
-        }`}
-      >
-        <Text
-          className={`text-xs font-medium ${
-            set.exerciseType === "cardio" ? "text-orange-600" : "text-blue-600"
+    <Pressable onLongPress={handleDelete}>
+      {({ pressed }) => (
+        <View
+          className={`px-4 py-3 flex-row items-center justify-between bg-card border-b border-border/40 ${
+            pressed ? "bg-muted/50" : ""
           }`}
         >
-          {set.exerciseType}
-        </Text>
-      </View>
-    </TouchableOpacity>
+          <View className="flex-row items-center flex-1">
+            <View
+              className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${
+                isCardio ? "bg-accent/10" : "bg-secondary/10"
+              }`}
+            >
+              <Text
+                className={`font-sans-semibold text-sm ${
+                  isCardio ? "text-accent" : "text-secondary"
+                }`}
+              >
+                {setNumber}
+              </Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-foreground font-sans-medium">
+                {details.join(" × ") || "—"}
+              </Text>
+              {set.notes && (
+                <Text
+                  className="text-muted-foreground text-sm font-sans"
+                  numberOfLines={1}
+                >
+                  {set.notes}
+                </Text>
+              )}
+            </View>
+          </View>
+          <View
+            className={`px-2.5 py-1 rounded-full ${
+              isCardio ? "bg-accent/15" : "bg-secondary/15"
+            }`}
+          >
+            <Text
+              className={`text-xs font-sans-medium capitalize ${
+                isCardio ? "text-accent" : "text-secondary"
+              }`}
+            >
+              {set.exerciseType}
+            </Text>
+          </View>
+        </View>
+      )}
+    </Pressable>
   );
 }

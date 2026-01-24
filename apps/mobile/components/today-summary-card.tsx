@@ -1,141 +1,158 @@
 import { View, Text } from "react-native";
+import { Footprints, Scale, Dumbbell } from "lucide-react-native";
 import type { DashboardData } from "@voicefit/shared/types";
+
+import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 
 interface TodaySummaryCardProps {
   data: DashboardData["today"];
 }
 
-function CircularProgress({
-  progress,
-  color,
-  size = 80,
-}: {
-  progress: number;
-  color: string;
-  size?: number;
-}) {
-  const clampedProgress = Math.min(Math.max(progress, 0), 1);
-  const strokeWidth = 8;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference * (1 - clampedProgress);
+export function TodaySummaryCard({ data }: TodaySummaryCardProps) {
+  const calorieProgress = Math.min(
+    (data.calories.consumed / data.calories.goal) * 100,
+    100
+  );
+  const stepProgress = data.steps.count
+    ? Math.min((data.steps.count / data.steps.goal) * 100, 100)
+    : 0;
+  const calorieRemaining = Math.max(
+    data.calories.goal - data.calories.consumed,
+    0
+  );
 
   return (
-    <View style={{ width: size, height: size }}>
-      {/* Background circle */}
+    <Card className="border-border/60 bg-card/70 overflow-hidden">
+      {/* Glow blobs */}
       <View
-        style={{
-          position: "absolute",
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: strokeWidth,
-          borderColor: "#e5e7eb",
-        }}
-      />
-      {/* Progress circle - simplified with border */}
-      <View
-        style={{
-          position: "absolute",
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: strokeWidth,
-          borderColor: color,
-          borderTopColor: clampedProgress > 0.25 ? color : "transparent",
-          borderRightColor: clampedProgress > 0.5 ? color : "transparent",
-          borderBottomColor: clampedProgress > 0.75 ? color : "transparent",
-          transform: [{ rotate: "-90deg" }],
-          opacity: clampedProgress > 0 ? 1 : 0,
-        }}
+        className="absolute -top-20 right-0 w-36 h-36 rounded-full bg-success/10"
+        style={{ transform: [{ scale: 1.5 }] }}
+        pointerEvents="none"
       />
       <View
-        style={{
-          position: "absolute",
-          width: size,
-          height: size,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 14,
-            fontWeight: "600",
-            color: "#374151",
-          }}
-        >
-          {Math.round(clampedProgress * 100)}%
+        className="absolute -bottom-24 left-4 w-40 h-40 rounded-full bg-snack/10"
+        style={{ transform: [{ scale: 1.5 }] }}
+        pointerEvents="none"
+      />
+
+      {/* Header */}
+      <View className="px-6 pt-6 pb-4">
+        <Text className="text-lg font-display text-foreground">Today</Text>
+        <Text className="text-xs text-muted-foreground font-sans">
+          Daily snapshot
         </Text>
       </View>
-    </View>
-  );
-}
 
-export function TodaySummaryCard({ data }: TodaySummaryCardProps) {
-  const calorieProgress = data.calories.consumed / data.calories.goal;
-  const stepProgress = (data.steps.count ?? 0) / data.steps.goal;
-
-  return (
-    <View className="bg-card border border-border rounded-2xl p-5 mt-4">
-      <Text className="text-foreground font-semibold text-lg mb-4">
-        Today's Progress
-      </Text>
-
-      <View className="flex-row justify-around">
-        {/* Calories */}
-        <View className="items-center">
-          <CircularProgress
-            progress={calorieProgress}
-            color={calorieProgress > 1 ? "#ef4444" : "#3b82f6"}
-          />
-          <Text className="text-foreground font-semibold mt-3">
-            {data.calories.consumed.toLocaleString()}
-          </Text>
-          <Text className="text-muted-foreground text-xs">
-            / {data.calories.goal.toLocaleString()} kcal
-          </Text>
-        </View>
-
-        {/* Steps */}
-        <View className="items-center">
-          <CircularProgress
-            progress={stepProgress}
-            color={stepProgress >= 1 ? "#22c55e" : "#f59e0b"}
-          />
-          <Text className="text-foreground font-semibold mt-3">
-            {(data.steps.count ?? 0).toLocaleString()}
-          </Text>
-          <Text className="text-muted-foreground text-xs">
-            / {data.steps.goal.toLocaleString()} steps
-          </Text>
-        </View>
-
-        {/* Workouts */}
-        <View className="items-center">
-          <View className="w-20 h-20 bg-primary/10 rounded-full items-center justify-center">
-            <Text className="text-primary text-2xl font-bold">
-              {data.workoutSets}
-            </Text>
+      {/* Content */}
+      <View className="px-6 pb-6 gap-3">
+        {/* Calories Panel */}
+        <View className="rounded-2xl border border-border/60 bg-muted/40 p-4">
+          <View className="flex-row items-center justify-between">
+            <View className="gap-1">
+              <Text className="text-[11px] uppercase tracking-widest text-muted-foreground font-sans">
+                Calories
+              </Text>
+              <View className="flex-row items-baseline gap-2">
+                <Text className="text-2xl font-sans-semibold text-foreground tabular-nums">
+                  {data.calories.consumed.toLocaleString()}
+                </Text>
+                <Text className="text-xs text-muted-foreground font-sans">
+                  / {data.calories.goal.toLocaleString()}
+                </Text>
+              </View>
+              <Text className="text-xs text-muted-foreground font-sans">
+                {calorieRemaining.toLocaleString()} remaining
+              </Text>
+            </View>
+            {/* Calorie ring indicator */}
+            <View
+              className="w-12 h-12 rounded-full items-center justify-center"
+              style={{
+                backgroundColor: `rgba(249, 115, 22, ${Math.min(calorieProgress / 100, 1) * 0.3})`,
+              }}
+            >
+              <View className="w-9 h-9 rounded-full bg-background/90" />
+            </View>
           </View>
-          <Text className="text-foreground font-semibold mt-3">
-            {data.workoutSessions}
-          </Text>
-          <Text className="text-muted-foreground text-xs">
-            workouts
-          </Text>
+          <Progress
+            value={calorieProgress}
+            variant="accent"
+            className="mt-3 h-1.5"
+          />
+        </View>
+
+        {/* Steps and Weight Row */}
+        <View className="flex-row gap-3">
+          {/* Steps Panel */}
+          <View className="flex-1 rounded-2xl border border-border/60 bg-card/60 p-4">
+            <View className="flex-row items-center gap-3">
+              <View className="rounded-xl bg-success/15 p-2">
+                <Footprints size={16} color="#22c55e" />
+              </View>
+              <View>
+                <Text className="text-xs text-muted-foreground font-sans">
+                  Steps
+                </Text>
+                <Text className="text-lg font-sans-semibold tabular-nums text-foreground">
+                  {data.steps.count?.toLocaleString() ?? "---"}
+                </Text>
+              </View>
+            </View>
+            <Progress
+              value={stepProgress}
+              variant="success"
+              className="mt-3 h-1.5"
+            />
+          </View>
+
+          {/* Weight Panel */}
+          <View className="flex-1 rounded-2xl border border-border/60 bg-card/60 p-4">
+            <View className="flex-row items-center gap-3">
+              <View className="rounded-xl bg-secondary/15 p-2">
+                <Scale size={16} color="#3b82f6" />
+              </View>
+              <View>
+                <Text className="text-xs text-muted-foreground font-sans">
+                  Weight
+                </Text>
+                <Text className="text-lg font-sans-semibold tabular-nums text-foreground">
+                  {data.weight ? `${data.weight} kg` : "---"}
+                </Text>
+              </View>
+            </View>
+            {/* Decorative gradient line */}
+            <View className="mt-3 h-1.5 rounded-full bg-secondary/20" />
+          </View>
+        </View>
+
+        {/* Workouts Panel */}
+        <View className="rounded-2xl border border-border/60 bg-card/60 p-4">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center gap-3">
+              <View className="rounded-xl bg-primary/15 p-2">
+                <Dumbbell size={16} color="#16a34a" />
+              </View>
+              <View>
+                <Text className="text-xs text-muted-foreground font-sans">
+                  Workouts
+                </Text>
+                <Text className="text-lg font-sans-semibold tabular-nums text-foreground">
+                  {data.workoutSessions}{" "}
+                  <Text className="text-xs text-muted-foreground font-sans font-normal">
+                    sessions
+                  </Text>
+                </Text>
+              </View>
+            </View>
+            <View className="bg-primary/10 px-3 py-1.5 rounded-full">
+              <Text className="text-sm font-sans-semibold text-primary tabular-nums">
+                {data.workoutSets} sets
+              </Text>
+            </View>
+          </View>
         </View>
       </View>
-
-      {/* Weight if available */}
-      {data.weight !== null && (
-        <View className="mt-4 pt-4 border-t border-border flex-row justify-center items-center">
-          <Text className="text-muted-foreground">Today's Weight: </Text>
-          <Text className="text-foreground font-semibold">
-            {data.weight.toFixed(1)} kg
-          </Text>
-        </View>
-      )}
-    </View>
+    </Card>
   );
 }
