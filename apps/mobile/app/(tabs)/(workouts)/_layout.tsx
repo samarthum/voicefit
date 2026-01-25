@@ -1,38 +1,41 @@
 import { Stack } from "expo-router";
 
+import { HeaderBackground, HeaderTitle } from "@/components/ui/header";
+
 export default function WorkoutsLayout() {
   return (
     <Stack
       screenOptions={{
         headerShown: true,
-        headerLargeTitle: true,
+        headerLargeTitle: false,
         headerShadowVisible: false,
+        headerTransparent: false,
         headerStyle: {
-          backgroundColor: "#ffffff",
+          backgroundColor: "transparent",
         },
-        headerTitleStyle: {
-          fontWeight: "600",
+        headerBackground: () => <HeaderBackground />,
+        headerTitleAlign: "left",
+        headerTitleContainerStyle: {
+          paddingHorizontal: 16,
         },
       }}
     >
       <Stack.Screen
         name="index"
         options={{
-          title: "Workouts",
+          headerTitle: () => <HeaderTitle title="Workouts" />,
         }}
       />
       <Stack.Screen
         name="[id]"
         options={{
-          title: "Workout",
-          headerLargeTitle: false,
+          headerTitle: () => <HeaderTitle title="Workout" />,
         }}
       />
       <Stack.Screen
         name="new"
         options={{
-          title: "New Workout",
-          headerLargeTitle: false,
+          headerTitle: () => <HeaderTitle title="New Workout" />,
           presentation: "modal",
         }}
       />

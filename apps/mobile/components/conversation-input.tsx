@@ -174,10 +174,12 @@ export function ConversationInput({
 
   // Handle mic button tap
   const handleMicPress = async () => {
+    console.log("[ConversationInput] Mic button pressed, isRecording:", isRecording);
     if (isRecording) {
       stopPulse();
       setState("uploading");
       const uri = await stopRecording();
+      console.log("[ConversationInput] Stopped recording, uri:", uri);
       if (uri) {
         setState("transcribing");
         transcribeMutation.mutate(uri);
@@ -185,7 +187,9 @@ export function ConversationInput({
         reset();
       }
     } else {
+      console.log("[ConversationInput] Starting recording...");
       const started = await startRecording();
+      console.log("[ConversationInput] Recording started:", started);
       if (started) {
         startPulse();
       }

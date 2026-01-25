@@ -12,9 +12,9 @@ interface ProgressProps extends ViewProps {
 
 const indicatorGradients: Record<string, [string, string]> = {
   default: ["#16a34a", "rgba(22, 163, 74, 0.8)"],
-  accent: ["#f97316", "#fb923c"],
-  success: ["#22c55e", "#4ade80"],
-  secondary: ["#3b82f6", "#60a5fa"],
+  accent: ["#f97316", "rgba(249, 115, 22, 0.8)"],
+  success: ["#22c55e", "rgba(34, 197, 94, 0.8)"],
+  secondary: ["#3b82f6", "rgba(59, 130, 246, 0.8)"],
 };
 
 export function Progress({

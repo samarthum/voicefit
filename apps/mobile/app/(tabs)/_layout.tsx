@@ -1,38 +1,39 @@
+import type { ComponentType } from "react";
 import { Tabs } from "expo-router";
 import { Platform } from "react-native";
-import { SymbolView, SymbolViewProps } from "expo-symbols";
-import { View, Text } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  Home,
+  Utensils,
+  Dumbbell,
+  Activity,
+  Settings,
+} from "lucide-react-native";
 
-// Tab icon component that uses SF Symbols on iOS and fallback on Android
+// Tab icon component aligned to web Lucide icons across platforms
 function TabIcon({
-  name,
   color,
   focused,
-  fallback,
+  icon: Icon,
 }: {
-  name: SymbolViewProps["name"];
   color: string;
   focused: boolean;
-  fallback: string;
+  icon: ComponentType<{ color?: string; size?: number; strokeWidth?: number }>;
 }) {
-  if (Platform.OS === "ios") {
-    return (
-      <SymbolView
-        name={name}
-        type={focused ? "hierarchical" : "monochrome"}
-        tintColor={color}
-        style={{ width: 24, height: 24 }}
-      />
-    );
-  }
-
-  // Android fallback with emoji
   return (
-    <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.6 }}>{fallback}</Text>
+    <Icon
+      color={color}
+      size={24}
+      strokeWidth={focused ? 2.2 : 2}
+    />
   );
 }
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, 10);
+  const tabBarHeight = (Platform.OS === "ios" ? 60 : 56) + bottomPadding;
+
   return (
     <Tabs
       screenOptions={{
@@ -42,8 +43,8 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: "#ffffff",
           borderTopColor: "rgba(15, 23, 42, 0.12)",
-          paddingBottom: Platform.OS === "ios" ? 0 : 8,
-          height: Platform.OS === "ios" ? 85 : 60,
+          paddingBottom: bottomPadding,
+          height: tabBarHeight,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -58,10 +59,9 @@ export default function TabsLayout() {
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              name="house.fill"
               color={color}
               focused={focused}
-              fallback="🏠"
+              icon={Home}
             />
           ),
         }}
@@ -72,10 +72,9 @@ export default function TabsLayout() {
           title: "Meals",
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              name="fork.knife"
               color={color}
               focused={focused}
-              fallback="🍽️"
+              icon={Utensils}
             />
           ),
         }}
@@ -86,10 +85,9 @@ export default function TabsLayout() {
           title: "Workouts",
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              name="dumbbell.fill"
               color={color}
               focused={focused}
-              fallback="💪"
+              icon={Dumbbell}
             />
           ),
         }}
@@ -100,10 +98,9 @@ export default function TabsLayout() {
           title: "Metrics",
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              name="chart.line.uptrend.xyaxis"
               color={color}
               focused={focused}
-              fallback="📊"
+              icon={Activity}
             />
           ),
         }}
@@ -114,10 +111,9 @@ export default function TabsLayout() {
           title: "Settings",
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              name="gearshape.fill"
               color={color}
               focused={focused}
-              fallback="⚙️"
+              icon={Settings}
             />
           ),
         }}

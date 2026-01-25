@@ -36,7 +36,7 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-background items-center justify-center" edges={["bottom"]}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+        <ActivityIndicator size="large" color="#16a34a" />
       </SafeAreaView>
     );
   }
@@ -63,7 +63,11 @@ export default function HomeScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={["bottom"]}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 16,
+          paddingBottom: 120,
+        }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -72,7 +76,12 @@ export default function HomeScreen() {
         {dashboard && (
           <>
             <TodaySummaryCard data={dashboard.today} />
-            <WeeklyTrendsCard data={dashboard.weeklyTrends} />
+            <View className="mt-4">
+              <WeeklyTrendsCard
+                data={dashboard.weeklyTrends}
+                calorieGoal={dashboard.today.calories.goal}
+              />
+            </View>
           </>
         )}
       </ScrollView>
