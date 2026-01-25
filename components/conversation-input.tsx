@@ -550,6 +550,16 @@ export function ConversationInput({
     return null;
   }, [duration, isPreparing, isRecording, state]);
 
+  const waveformBars = useMemo(
+    () =>
+      Array.from({ length: 28 }, (_, index) => ({
+        height: 12 + (index % 6) * 4,
+        delay: index * 0.08,
+        duration: 1.1 + (index % 5) * 0.15,
+      })),
+    []
+  );
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -563,6 +573,9 @@ export function ConversationInput({
 
   const isBusy = state !== "idle" || isPreparing || isRecording;
   const isAnalyzing = state === "interpreting";
+  const showRecordingWaveform = isRecording || isPreparing;
+  const showTranscribing = state === "transcribing";
+  const showWaveformPanel = showRecordingWaveform || showTranscribing;
 
   const handleMicClick = () => {
     if (isRecording) {
@@ -730,74 +743,113 @@ export function ConversationInput({
 
                   {/* Input Area */}
                   <div className="relative flex items-center">
-                    <textarea
-                      ref={textareaRef}
-                      value={inputValue}
-                      onChange={(e) => {
-                        const nextValue = e.target.value;
-                        setInputValue(nextValue);
-                        if (inputSource === "voice" && nextValue.trim() === "") {
-                          setInputSource("text");
-                        }
-                      }}
-                      onKeyDown={handleKeyDown}
-                      placeholder={placeholder}
-                      disabled={isBusy}
-                      rows={2}
-                      className={cn(
-                        "w-full resize-none rounded-2xl px-4 py-3",
-                        inputValue.trim() ? "pr-16" : "pr-28",
-                        "bg-background border border-border/70 dark:bg-white/[0.04] dark:border-white/[0.08]",
-                        "text-foreground placeholder:text-muted-foreground/60",
-                        "focus:outline-none focus:border-primary/30 focus:bg-background",
-                        "focus:shadow-[0_0_0_3px_rgba(22,163,74,0.12)] dark:focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)]",
-                        "transition-all duration-200",
-                        isBusy && "opacity-50 cursor-not-allowed"
-                      )}
-                    />
-
-                    {/* Action Buttons - centered vertically */}
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                      {/* Mic Button - hidden when user is typing */}
-                      {!inputValue.trim() && (
-                        <button
-                          onClick={handleMicClick}
-                          disabled={isBusy && !isRecording}
-                          className={cn(
-                            "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
-                            isRecording
-                              ? "bg-destructive text-white animate-pulse"
-                              : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground dark:bg-white/[0.06] dark:hover:bg-white/[0.1]",
-                            isBusy && !isRecording && "opacity-50 cursor-not-allowed"
-                          )}
-                        >
-                          {isRecording ? (
+                    {showWaveformPanel ? (
+                      <div className="flex w-full items-center justify-between rounded-2xl border border-border/70 bg-background/80 px-4 py-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                        <div className="flex flex-1 items-center gap-4">
+                          <div className="flex h-10 items-end gap-0.5">
+                            {waveformBars.map((bar, index) => (
+                              <span
+                                key={`wave-${index}`}
+                                className="voice-wave-bar w-0.5 rounded-full bg-foreground/70 dark:bg-white/70"
+                                style={
+                                  {
+                                    height: `${bar.height}px`,
+                                    animationDelay: `${bar.delay}s`,
+                                    "--voice-wave-duration": `${bar.duration}s`,
+                                  } as React.CSSProperties
+                                }
+                              />
+                            ))}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {showTranscribing ? "Transcribing..." : statusText ?? "Recording..."}
+                          </div>
+                        </div>
+                        {showRecordingWaveform ? (
+                          <button
+                            onClick={handleMicClick}
+                            className="ml-4 flex h-10 w-10 items-center justify-center rounded-xl bg-destructive text-white transition-all duration-200 hover:scale-105"
+                          >
                             <Square className="w-4 h-4 fill-current" />
-                          ) : (
-                            <Mic className="w-4 h-4" />
-                          )}
-                        </button>
-                      )}
-
-                      {/* Send Button */}
-                      <button
-                        onClick={handleTextSubmit}
-                        disabled={isBusy || !inputValue.trim()}
-                        className={cn(
-                          "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
-                          inputValue.trim()
-                            ? "bg-primary text-primary-foreground hover:shadow-[0_0_16px_rgba(22,163,74,0.25)]"
-                            : "bg-muted/60 text-muted-foreground dark:bg-white/[0.06]",
-                          (isBusy || !inputValue.trim()) && "opacity-50 cursor-not-allowed"
+                          </button>
+                        ) : (
+                          <div className="ml-4 flex h-2 w-16 items-center">
+                            <div className="h-2 w-full rounded-full bg-muted/60 animate-pulse dark:bg-white/[0.08]" />
+                          </div>
                         )}
-                      >
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </div>
+                      </div>
+                    ) : (
+                      <>
+                        <textarea
+                          ref={textareaRef}
+                          value={inputValue}
+                          onChange={(e) => {
+                            const nextValue = e.target.value;
+                            setInputValue(nextValue);
+                            if (inputSource === "voice" && nextValue.trim() === "") {
+                              setInputSource("text");
+                            }
+                          }}
+                          onKeyDown={handleKeyDown}
+                          placeholder={placeholder}
+                          disabled={isBusy}
+                          rows={2}
+                          className={cn(
+                            "w-full resize-none rounded-2xl px-4 py-3",
+                            inputValue.trim() ? "pr-16" : "pr-28",
+                            "bg-background border border-border/70 dark:bg-white/[0.04] dark:border-white/[0.08]",
+                            "text-foreground placeholder:text-muted-foreground/60",
+                            "focus:outline-none focus:border-primary/30 focus:bg-background",
+                            "focus:shadow-[0_0_0_3px_rgba(22,163,74,0.12)] dark:focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)]",
+                            "transition-all duration-200",
+                            isBusy && "opacity-50 cursor-not-allowed"
+                          )}
+                        />
+
+                        {/* Action Buttons - centered vertically */}
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                          {/* Mic Button - hidden when user is typing */}
+                          {!inputValue.trim() && (
+                            <button
+                              onClick={handleMicClick}
+                              disabled={isBusy && !isRecording}
+                              className={cn(
+                                "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
+                                isRecording
+                                  ? "bg-destructive text-white animate-pulse"
+                                  : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground dark:bg-white/[0.06] dark:hover:bg-white/[0.1]",
+                                isBusy && !isRecording && "opacity-50 cursor-not-allowed"
+                              )}
+                            >
+                              {isRecording ? (
+                                <Square className="w-4 h-4 fill-current" />
+                              ) : (
+                                <Mic className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+
+                          {/* Send Button */}
+                          <button
+                            onClick={handleTextSubmit}
+                            disabled={isBusy || !inputValue.trim()}
+                            className={cn(
+                              "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
+                              inputValue.trim()
+                                ? "bg-primary text-primary-foreground hover:shadow-[0_0_16px_rgba(22,163,74,0.25)]"
+                                : "bg-muted/60 text-muted-foreground dark:bg-white/[0.06]",
+                              (isBusy || !inputValue.trim()) && "opacity-50 cursor-not-allowed"
+                            )}
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Status Text */}
-                  {statusText && (
+                  {statusText && !showWaveformPanel && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                       <span>{statusText}</span>

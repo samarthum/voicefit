@@ -268,6 +268,17 @@
   }
 }
 
+@keyframes voice-wave {
+  0%, 100% {
+    transform: scaleY(0.35);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -296,6 +307,11 @@
 
 .animate-pulse-ring {
   animation: pulse-ring 1.5s ease-out infinite;
+}
+
+.voice-wave-bar {
+  transform-origin: bottom;
+  animation: voice-wave var(--voice-wave-duration, 1.2s) ease-in-out infinite;
 }
 
 /* Staggered children animation */
