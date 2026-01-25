@@ -746,11 +746,11 @@ export function ConversationInput({
                     {showWaveformPanel ? (
                       <div className="flex w-full items-center justify-between rounded-2xl border border-border/70 bg-background/80 px-4 py-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
                         <div className="flex flex-1 items-center gap-4">
-                          <div className="flex h-10 items-end gap-1">
+                          <div className="flex h-10 items-end gap-0.5">
                             {waveformBars.map((bar, index) => (
                               <span
                                 key={`wave-${index}`}
-                                className="voice-wave-bar w-1 rounded-full bg-foreground/70 dark:bg-white/70"
+                                className="voice-wave-bar w-0.5 rounded-full bg-foreground/70 dark:bg-white/70"
                                 style={
                                   {
                                     height: `${bar.height}px`,
@@ -773,9 +773,8 @@ export function ConversationInput({
                             <Square className="w-4 h-4 fill-current" />
                           </button>
                         ) : (
-                          <div className="ml-4 flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />
-                            <span>Working...</span>
+                          <div className="ml-4 flex h-2 w-16 items-center">
+                            <div className="h-2 w-full rounded-full bg-muted/60 animate-pulse dark:bg-white/[0.08]" />
                           </div>
                         )}
                       </div>
@@ -850,7 +849,7 @@ export function ConversationInput({
                   </div>
 
                   {/* Status Text */}
-                  {statusText && (
+                  {statusText && !showWaveformPanel && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                       <span>{statusText}</span>
