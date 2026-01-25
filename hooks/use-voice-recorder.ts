@@ -11,6 +11,7 @@ export interface UseVoiceRecorderReturn {
   mimeType: string | null;
   startRecording: () => Promise<void>;
   stopRecording: () => void;
+  cancelRecording: () => void;
   reset: () => void;
 }
 
@@ -27,6 +28,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
   const chunksRef = useRef<Blob[]>([]);
   const startTimeRef = useRef<number>(0);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const cancelRef = useRef(false);
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -108,6 +110,15 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
       mediaRecorder.onstop = () => {
         // Small delay to ensure all data is flushed
         setTimeout(() => {
+          if (cancelRef.current) {
+            cancelRef.current = false;
+            setAudioBlob(null);
+            setError(null);
+            setDuration(0);
+            setIsRecording(false);
+            cleanup();
+            return;
+          }
           if (chunksRef.current.length === 0) {
             setError("No audio data captured. Please try again.");
             setIsRecording(false);
@@ -138,6 +149,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
       // Start recording
       mediaRecorder.start(100); // Collect data every 100ms
       startTimeRef.current = Date.now();
+      cancelRef.current = false;
       setIsRecording(true);
       setIsPreparing(false);
 
@@ -181,6 +193,19 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
     }
   }, [isRecording, cleanup]);
 
+  const cancelRecording = useCallback(() => {
+    cancelRef.current = true;
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
+    } else {
+      cleanup();
+    }
+    setIsRecording(false);
+    setIsPreparing(false);
+    setDuration(0);
+    setError(null);
+  }, [cleanup]);
+
   const reset = useCallback(() => {
     setAudioBlob(null);
     setDuration(0);
@@ -200,6 +225,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
     mimeType,
     startRecording,
     stopRecording,
+    cancelRecording,
     reset,
   };
 }

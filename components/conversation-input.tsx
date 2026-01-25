@@ -117,6 +117,7 @@ export function ConversationInput({
     mimeType,
     startRecording,
     stopRecording,
+    cancelRecording,
     reset: resetRecorder,
   } = useVoiceRecorder();
 
@@ -203,10 +204,10 @@ export function ConversationInput({
   );
 
   useEffect(() => {
-    if (audioBlob && state === "idle" && !processingRef.current) {
+    if (audioBlob && !processingRef.current) {
       handleRecordingComplete(audioBlob);
     }
-  }, [audioBlob, handleRecordingComplete, state]);
+  }, [audioBlob, handleRecordingComplete]);
 
   useEffect(() => {
     if (recorderError) {
@@ -566,11 +567,11 @@ export function ConversationInput({
   }, [duration, isPreparing, isRecording, state]);
 
   const waveformBars = useMemo(() => {
-    const total = 26;
+    const total = 40;
     const mid = (total - 1) / 2;
     return Array.from({ length: total }, (_, index) => {
       const distance = Math.abs(index - mid);
-      const height = 8 + Math.round((1 - distance / mid) * 14);
+      const height = 6 + Math.round((1 - distance / mid) * 12);
       return {
         height,
         delay: index * 0.07,
@@ -629,6 +630,7 @@ export function ConversationInput({
 
   const handleRecordingCancel = () => {
     processingRef.current = false;
+    cancelRecording();
     resetAll();
     setIsExpanded(false);
   };
@@ -775,13 +777,25 @@ export function ConversationInput({
                   {/* Input Area */}
                   <div className="relative flex items-center">
                     {showWaveformPanel ? (
-                      <div className="flex w-full items-center gap-4 rounded-2xl border border-border/70 bg-background/80 px-4 py-3 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                        <div className="flex flex-1 items-center gap-3">
-                          <div className="flex h-8 items-end gap-1">
+                      <div
+                        className="flex w-full items-center gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-3 dark:border-white/[0.08] dark:bg-white/[0.04]"
+                      >
+                        <div className="flex flex-1 min-w-0 items-center gap-3">
+                          <div
+                            className={cn(
+                              "flex h-8 w-full flex-1 items-end justify-between overflow-hidden",
+                              showTranscribing && "opacity-50 animate-pulse"
+                            )}
+                          >
                             {waveformBars.map((bar, index) => (
                               <span
                                 key={`wave-${index}`}
-                                className="voice-wave-bar w-1 rounded-full bg-primary/60 dark:bg-white/70"
+                                className={cn(
+                                  "voice-wave-bar w-0.5 rounded-full",
+                                  showTranscribing
+                                    ? "bg-primary/40 dark:bg-white/50"
+                                    : "bg-primary/60 dark:bg-white/70"
+                                )}
                                 style={
                                   {
                                     height: `${bar.height}px`,
@@ -792,11 +806,8 @@ export function ConversationInput({
                               />
                             ))}
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            {showTranscribing ? "Transcribing..." : statusText ?? "Recording..."}
-                          </div>
                         </div>
-                        {showRecordingWaveform ? (
+                        {showRecordingWaveform && (
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
@@ -819,9 +830,10 @@ export function ConversationInput({
                               <Check className="w-4 h-4" />
                             </button>
                           </div>
-                        ) : (
-                          <div className="ml-4 flex h-2 w-16 items-center">
-                            <div className="h-2 w-full rounded-full bg-muted/60 animate-pulse dark:bg-white/[0.08]" />
+                        )}
+                        {!showRecordingWaveform && showTranscribing && (
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/80 dark:border-white/[0.08] dark:bg-white/[0.06]">
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
                           </div>
                         )}
                       </div>
