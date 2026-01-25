@@ -2,7 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mic, Send, Square, ChevronDown, Sparkles, UtensilsCrossed, Dumbbell, Footprints, Scale, type LucideIcon } from "lucide-react";
+import {
+  Mic,
+  Send,
+  Square,
+  ChevronDown,
+  Sparkles,
+  UtensilsCrossed,
+  Dumbbell,
+  Footprints,
+  Scale,
+  Check,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useVoiceRecorder } from "@/hooks/use-voice-recorder";
 import { MealInterpretationDialog } from "@/components/meal-interpretation-dialog";
@@ -198,6 +211,8 @@ export function ConversationInput({
   useEffect(() => {
     if (recorderError) {
       toast.error(recorderError);
+      setState("idle");
+      processingRef.current = false;
     }
   }, [recorderError]);
 
@@ -550,15 +565,19 @@ export function ConversationInput({
     return null;
   }, [duration, isPreparing, isRecording, state]);
 
-  const waveformBars = useMemo(
-    () =>
-      Array.from({ length: 28 }, (_, index) => ({
-        height: 12 + (index % 6) * 4,
-        delay: index * 0.08,
-        duration: 1.1 + (index % 5) * 0.15,
-      })),
-    []
-  );
+  const waveformBars = useMemo(() => {
+    const total = 26;
+    const mid = (total - 1) / 2;
+    return Array.from({ length: total }, (_, index) => {
+      const distance = Math.abs(index - mid);
+      const height = 8 + Math.round((1 - distance / mid) * 14);
+      return {
+        height,
+        delay: index * 0.07,
+        duration: 1.05 + (index % 4) * 0.12,
+      };
+    });
+  }, []);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -600,6 +619,18 @@ export function ConversationInput({
         }
       }, 50);
     }
+  };
+
+  const handleRecordingAccept = () => {
+    if (!isRecording) return;
+    setState("transcribing");
+    stopRecording();
+  };
+
+  const handleRecordingCancel = () => {
+    processingRef.current = false;
+    resetAll();
+    setIsExpanded(false);
   };
 
   return (
@@ -744,13 +775,13 @@ export function ConversationInput({
                   {/* Input Area */}
                   <div className="relative flex items-center">
                     {showWaveformPanel ? (
-                      <div className="flex w-full items-center justify-between rounded-2xl border border-border/70 bg-background/80 px-4 py-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                        <div className="flex flex-1 items-center gap-4">
-                          <div className="flex h-10 items-end gap-0.5">
+                      <div className="flex w-full items-center gap-4 rounded-2xl border border-border/70 bg-background/80 px-4 py-3 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                        <div className="flex flex-1 items-center gap-3">
+                          <div className="flex h-8 items-end gap-1">
                             {waveformBars.map((bar, index) => (
                               <span
                                 key={`wave-${index}`}
-                                className="voice-wave-bar w-0.5 rounded-full bg-foreground/70 dark:bg-white/70"
+                                className="voice-wave-bar w-1 rounded-full bg-primary/60 dark:bg-white/70"
                                 style={
                                   {
                                     height: `${bar.height}px`,
@@ -761,17 +792,33 @@ export function ConversationInput({
                               />
                             ))}
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-xs text-muted-foreground">
                             {showTranscribing ? "Transcribing..." : statusText ?? "Recording..."}
                           </div>
                         </div>
                         {showRecordingWaveform ? (
-                          <button
-                            onClick={handleMicClick}
-                            className="ml-4 flex h-10 w-10 items-center justify-center rounded-xl bg-destructive text-white transition-all duration-200 hover:scale-105"
-                          >
-                            <Square className="w-4 h-4 fill-current" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={handleRecordingCancel}
+                              className="flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:border-white/[0.08] dark:bg-white/[0.06]"
+                              aria-label="Cancel recording"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleRecordingAccept}
+                              disabled={!isRecording}
+                              className={cn(
+                                "flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/25 transition-all duration-200 hover:scale-105",
+                                !isRecording && "opacity-50 cursor-not-allowed"
+                              )}
+                              aria-label="Accept recording"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                          </div>
                         ) : (
                           <div className="ml-4 flex h-2 w-16 items-center">
                             <div className="h-2 w-full rounded-full bg-muted/60 animate-pulse dark:bg-white/[0.08]" />
