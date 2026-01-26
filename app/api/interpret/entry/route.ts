@@ -192,7 +192,7 @@ async function answerQuestion(userId: string, question: string, timezone?: strin
     .replace("{{workouts}}", context.workouts);
 
   const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5",
+    model: "claude-sonnet-4-5-20250929",
     max_tokens: 512,
     messages: [{ role: "user", content: prompt }],
   });
@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
     const { transcript, timezone } = parseResult.data;
 
     const classificationResult = await anthropic.messages.create({
-      model: "claude-haiku-4-5",
+      model: "claude-sonnet-4-5-20250929",
       max_tokens: 512,
       system: CLASSIFIER_PROMPT,
       messages: [{ role: "user", content: transcript }],
