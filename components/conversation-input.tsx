@@ -156,59 +156,6 @@ export function ConversationInput({
     [onEventOptimistic]
   );
 
-  const handleRecordingComplete = useCallback(
-    async (blob: Blob) => {
-      if (processingRef.current) return;
-      processingRef.current = true;
-      setState("transcribing");
-
-      try {
-        const formData = new FormData();
-        const extension = getFileExtension(mimeType);
-        formData.append("audio", blob, `recording.${extension}`);
-
-        const response = await fetch("/api/transcribe", {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await response.json();
-        if (!data.success) {
-          throw new Error(data.error || "Failed to transcribe");
-        }
-
-        const transcript = data.data.transcript;
-        setInputValue(transcript);
-        setInputSource("voice");
-        setIsExpanded(true);
-        setTimeout(() => {
-          if (textareaRef.current) {
-            textareaRef.current.focus();
-            // Set cursor position to the end of the text
-            const length = transcript.length;
-            textareaRef.current.setSelectionRange(length, length);
-          }
-        }, 50);
-        setState("idle");
-        resetRecorder();
-      } catch (error) {
-        console.error("Transcription error:", error);
-        toast.error("Failed to transcribe audio. Please try again.");
-        setState("idle");
-        resetRecorder();
-      } finally {
-        processingRef.current = false;
-      }
-    },
-    [mimeType, resetRecorder]
-  );
-
-  useEffect(() => {
-    if (audioBlob && !processingRef.current) {
-      handleRecordingComplete(audioBlob);
-    }
-  }, [audioBlob, handleRecordingComplete]);
-
   useEffect(() => {
     if (recorderError) {
       toast.error(recorderError);
@@ -330,6 +277,50 @@ export function ConversationInput({
     },
     [handleQuestionSave]
   );
+
+  const handleRecordingComplete = useCallback(
+    async (blob: Blob) => {
+      if (processingRef.current) return;
+      processingRef.current = true;
+      setState("transcribing");
+
+      try {
+        const formData = new FormData();
+        const extension = getFileExtension(mimeType);
+        formData.append("audio", blob, `recording.${extension}`);
+
+        const response = await fetch("/api/transcribe", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.error || "Failed to transcribe");
+        }
+
+        const transcript = data.data.transcript;
+        setIsExpanded(true);
+        resetRecorder();
+        // Auto-submit the transcription to the interpreter
+        await handleTranscriptSubmit(transcript, "voice");
+      } catch (error) {
+        console.error("Transcription error:", error);
+        toast.error("Failed to transcribe audio. Please try again.");
+        setState("idle");
+        resetRecorder();
+      } finally {
+        processingRef.current = false;
+      }
+    },
+    [handleTranscriptSubmit, mimeType, resetRecorder]
+  );
+
+  useEffect(() => {
+    if (audioBlob && !processingRef.current) {
+      handleRecordingComplete(audioBlob);
+    }
+  }, [audioBlob, handleRecordingComplete]);
 
   const handleTextSubmit = useCallback(async () => {
     const trimmed = inputValue.trim();
@@ -743,9 +734,21 @@ export function ConversationInput({
               </div>
 
               {isAnalyzing ? (
-                <div className="flex items-center justify-center rounded-2xl border border-border/60 bg-muted/60 px-4 py-10 text-center dark:border-white/[0.08] dark:bg-white/[0.04]">
-                  <span className="text-lg font-semibold text-foreground/90 animate-pulse">
-                    Analyzing...
+                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border/60 bg-muted/60 px-4 py-6 text-center dark:border-white/[0.08] dark:bg-white/[0.04]">
+                  {/* Pulsing indicator dots */}
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse [animation-delay:150ms]" />
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse [animation-delay:300ms]" />
+                  </div>
+                  {/* Transcribed text */}
+                  {currentTranscript && (
+                    <p className="text-sm text-muted-foreground/80 italic max-w-full px-2 line-clamp-2">
+                      &ldquo;{currentTranscript}&rdquo;
+                    </p>
+                  )}
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/60">
+                    Analyzing
                   </span>
                 </div>
               ) : (
