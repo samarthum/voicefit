@@ -11,9 +11,22 @@ import { toast } from "sonner";
 
 interface VoiceMealLoggerProps {
   onMealSaved: () => void;
+  selectedDate?: string; // Format: "YYYY-MM-DD" (e.g., "2026-01-28")
 }
 
-export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
+// Helper to build a datetime by combining a date string with current time
+function buildDateTimeForSelectedDate(selectedDate?: string): string {
+  const now = new Date();
+  if (!selectedDate) {
+    return now.toISOString();
+  }
+  // Combine the selected date with the current time of day
+  const [year, month, day] = selectedDate.split("-").map(Number);
+  const combined = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+  return combined.toISOString();
+}
+
+export function VoiceMealLogger({ onMealSaved, selectedDate }: VoiceMealLoggerProps) {
   const {
     isRecording,
     isPreparing,
@@ -91,10 +104,11 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
     setState("interpreting");
 
     try {
+      const eatenAt = buildDateTimeForSelectedDate(selectedDate);
       const response = await fetch("/api/interpret/meal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript: editedTranscript }),
+        body: JSON.stringify({ transcript: editedTranscript, eatenAt }),
       });
 
       const data = await response.json();
@@ -119,10 +133,11 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
     setState("interpreting");
 
     try {
+      const eatenAt = buildDateTimeForSelectedDate(selectedDate);
       const response = await fetch("/api/interpret/meal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript: text }),
+        body: JSON.stringify({ transcript: text, eatenAt }),
       });
 
       const data = await response.json();
@@ -149,12 +164,13 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
     setState("saving");
 
     try {
+      const eatenAt = buildDateTimeForSelectedDate(selectedDate);
       const response = await fetch("/api/meals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...mealData,
-          eatenAt: new Date().toISOString(),
+          eatenAt,
           transcriptRaw: currentTranscript,
         }),
       });
@@ -253,6 +269,7 @@ export function VoiceMealLogger({ onMealSaved }: VoiceMealLoggerProps) {
         isLoading={state === "interpreting" || state === "saving"}
         onSave={handleMealSave}
         onCancel={resetAll}
+        selectedDate={selectedDate}
       />
     </div>
   );
