@@ -35,6 +35,24 @@ interface MealInterpretationDialogProps {
     calories: number;
   }) => void;
   onCancel: () => void;
+  selectedDate?: string; // Format: "YYYY-MM-DD"
+}
+
+function formatDateForDisplay(dateString?: string): string | null {
+  if (!dateString) return null;
+  const today = new Date().toLocaleDateString("en-CA");
+  if (dateString === today) return null; // Don't show anything special for today
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (dateString === yesterday.toLocaleDateString("en-CA")) return "Yesterday";
+
+  const date = new Date(dateString + "T12:00:00");
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export function MealInterpretationDialog(props: MealInterpretationDialogProps) {
@@ -52,7 +70,9 @@ function MealInterpretationDialogInner({
   isLoading = false,
   onSave,
   onCancel,
+  selectedDate,
 }: MealInterpretationDialogProps) {
+  const dateLabel = formatDateForDisplay(selectedDate);
   const [mealType, setMealType] = useState<string>(interpretation?.mealType ?? "breakfast");
   const [description, setDescription] = useState(interpretation?.description ?? "");
   const [calories, setCalories] = useState<number>(interpretation?.calories ?? 0);
@@ -84,7 +104,9 @@ function MealInterpretationDialogInner({
         <DialogHeader>
           <DialogTitle>Review Meal</DialogTitle>
           <DialogDescription>
-            Review and adjust the interpreted meal details before saving.
+            {dateLabel
+              ? `Logging meal for ${dateLabel}. Review and adjust the details before saving.`
+              : "Review and adjust the interpreted meal details before saving."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
