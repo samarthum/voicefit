@@ -67,9 +67,14 @@ export async function runAssistantChat(input: {
   ]);
 
   const summary = computeSummary(currentData, previousData, range, previousRange);
+  const sources: Array<"meals" | "daily_metrics" | "workouts"> = [
+    "meals",
+    "daily_metrics",
+    "workouts",
+  ];
   const dataUsed = {
     range: { start: range.start, end: range.end },
-    sources: ["meals", "daily_metrics", "workouts"] as const,
+    sources,
     counts: {
       meals: currentData.meals.length,
       metrics: currentData.metrics.length,
