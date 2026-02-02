@@ -36,6 +36,48 @@ export interface ConversationEvent {
 
 export type EntryIntent = "meal" | "workout_set" | "weight" | "steps" | "question";
 
+// Assistant chat (read-only)
+export interface AssistantChatResponse {
+  answer: string;
+  dataUsed: {
+    range: { start: string; end: string };
+    sources: Array<"meals" | "daily_metrics" | "workouts">;
+    counts: { meals: number; metrics: number; workouts: number };
+  };
+  summary: {
+    period: { start: string; end: string };
+    previousPeriod: { start: string; end: string };
+    totals: {
+      calories: number;
+      steps: number | null;
+      workouts: number;
+      weightAvgKg: number | null;
+      weightChangeKg: number | null;
+    };
+    deltas: {
+      calories: number | null;
+      steps: number | null;
+      workouts: number | null;
+      weightAvgKg: number | null;
+      weightChangeKg: number | null;
+    };
+  };
+  followUps: string[];
+  readOnlyNotice?: string;
+}
+
+export type AssistantChatRole = "user" | "assistant";
+
+export interface AssistantChatMessage {
+  id: string;
+  role: AssistantChatRole;
+  content: string;
+  status?: "pending" | "error";
+  dataUsed?: AssistantChatResponse["dataUsed"];
+  summary?: AssistantChatResponse["summary"];
+  followUps?: string[];
+}
+
 export interface MetricInterpretation {
   value: number;
   confidence: number;

@@ -76,6 +76,54 @@ export const workoutSetInterpretationSchema = z.object({
   assumptions: z.array(z.string()),
 });
 
+// Assistant chat (read-only)
+export const assistantChatRequestSchema = z.object({
+  message: z.string().min(1, "Message is required"),
+  timezone: z.string().optional(),
+});
+
+export const assistantChatResponseSchema = z.object({
+  answer: z.string(),
+  dataUsed: z.object({
+    range: z.object({
+      start: z.string(),
+      end: z.string(),
+    }),
+    sources: z.array(z.enum(["meals", "daily_metrics", "workouts"])),
+    counts: z.object({
+      meals: z.number().int().min(0),
+      metrics: z.number().int().min(0),
+      workouts: z.number().int().min(0),
+    }),
+  }),
+  summary: z.object({
+    period: z.object({
+      start: z.string(),
+      end: z.string(),
+    }),
+    previousPeriod: z.object({
+      start: z.string(),
+      end: z.string(),
+    }),
+    totals: z.object({
+      calories: z.number(),
+      steps: z.number().nullable(),
+      workouts: z.number(),
+      weightAvgKg: z.number().nullable(),
+      weightChangeKg: z.number().nullable(),
+    }),
+    deltas: z.object({
+      calories: z.number().nullable(),
+      steps: z.number().nullable(),
+      workouts: z.number().nullable(),
+      weightAvgKg: z.number().nullable(),
+      weightChangeKg: z.number().nullable(),
+    }),
+  }),
+  followUps: z.array(z.string()).max(3),
+  readOnlyNotice: z.string().optional(),
+});
+
 // Create meal request
 export const createMealSchema = z.object({
   eatenAt: z.string().datetime(),
