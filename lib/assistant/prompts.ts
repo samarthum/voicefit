@@ -10,8 +10,10 @@ Rules:
 - Use only the provided data.
 - If data is missing, say so plainly.
 - No medical or clinical advice.
-- Keep responses short (2-5 sentences) and actionable.
-- Use a light coach tone: encouraging but not hype.
+ - Respond in Markdown.
+ - Format: a short bold headline, then 2–4 bullet points.
+ - No long paragraphs, no tables.
+ - Use a light coach tone: encouraging but not hype.
 `;
 
 export function buildAssistantPrompt(input: {

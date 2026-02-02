@@ -53,7 +53,7 @@ export function useChatSession() {
       }
 
       updateMessage(assistantMessageId, {
-        content: result.data.answer,
+        content: result.data.markdown,
         status: undefined,
         dataUsed: result.data.dataUsed,
         summary: result.data.summary,

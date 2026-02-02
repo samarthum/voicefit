@@ -1,5 +1,7 @@
 "use client";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AssistantChatMessage } from "@/lib/types";
@@ -14,20 +16,20 @@ const formatSigned = (value: number | null, suffix: string) => {
   const sign = value > 0 ? "+" : "";
   const absolute = Math.abs(value);
   const formatted = Number.isInteger(value)
-    ? value.toString()
+    ? value.toLocaleString()
     : absolute < 10
     ? value.toFixed(1)
-    : value.toFixed(0);
+    : Math.round(value).toLocaleString();
   return `${sign}${formatted} ${suffix}`.trim();
 };
 
 const formatValue = (value: number | null, suffix: string) => {
   if (value === null || Number.isNaN(value)) return "n/a";
   const rounded = Number.isInteger(value)
-    ? value.toString()
+    ? value.toLocaleString()
     : Math.abs(value) < 10
     ? value.toFixed(1)
-    : Math.round(value).toString();
+    : Math.round(value).toLocaleString();
   return `${rounded} ${suffix}`.trim();
 };
 
@@ -37,8 +39,7 @@ export function ChatMessage({ message, onFollowUp }: ChatMessageProps) {
 
   return (
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
-      <div className={cn("max-w-[90%] space-y-3", isUser && "items-end")}
-      >
+      <div className={cn("max-w-[90%] space-y-3", isUser && "items-end")}>
         <div
           className={cn(
             "rounded-2xl px-4 py-3 text-sm leading-relaxed",
@@ -54,7 +55,32 @@ export function ChatMessage({ message, onFollowUp }: ChatMessageProps) {
               Coach
             </div>
           )}
-          <p>{message.content}</p>
+          {isUser ? (
+            <p className="text-sm leading-relaxed">{message.content}</p>
+          ) : (
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                p: ({ children }) => (
+                  <p className="text-sm leading-relaxed text-foreground">{children}</p>
+                ),
+                strong: ({ children }) => (
+                  <span className="text-base font-medium text-foreground">{children}</span>
+                ),
+                ul: ({ children }) => (
+                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground">{children}</ul>
+                ),
+                li: ({ children }) => (
+                  <li className="flex gap-2">
+                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary/70" />
+                    <span>{children}</span>
+                  </li>
+                ),
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          )}
         </div>
 
         {!isUser && summary && (
@@ -62,35 +88,42 @@ export function ChatMessage({ message, onFollowUp }: ChatMessageProps) {
             <div className="mb-2 text-[11px] uppercase tracking-wide text-muted-foreground">
               Summary · {summary.period.start} → {summary.period.end}
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
                 <div className="text-muted-foreground">Calories</div>
-                <div className="text-foreground">
-                  {formatValue(summary.totals.calories, "kcal")} · {formatSigned(summary.deltas.calories, "kcal")}
+                <div className="text-foreground font-medium">
+                  {formatValue(summary.totals.calories, "kcal")}
                 </div>
+                <div className="text-muted-foreground">Δ {formatSigned(summary.deltas.calories, "kcal")}</div>
               </div>
               <div>
                 <div className="text-muted-foreground">Steps</div>
-                <div className="text-foreground">
-                  {formatValue(summary.totals.steps, "steps")} · {formatSigned(summary.deltas.steps, "steps")}
+                <div className="text-foreground font-medium">
+                  {formatValue(summary.totals.steps, "steps")}
                 </div>
+                <div className="text-muted-foreground">Δ {formatSigned(summary.deltas.steps, "steps")}</div>
               </div>
               <div>
                 <div className="text-muted-foreground">Workouts</div>
-                <div className="text-foreground">
-                  {formatValue(summary.totals.workouts, "sessions")} · {formatSigned(summary.deltas.workouts, "sessions")}
+                <div className="text-foreground font-medium">
+                  {formatValue(summary.totals.workouts, "sessions")}
                 </div>
+                <div className="text-muted-foreground">Δ {formatSigned(summary.deltas.workouts, "sessions")}</div>
               </div>
               <div>
                 <div className="text-muted-foreground">Weight avg</div>
-                <div className="text-foreground">
-                  {formatValue(summary.totals.weightAvgKg, "kg")} · {formatSigned(summary.deltas.weightAvgKg, "kg")}
+                <div className="text-foreground font-medium">
+                  {formatValue(summary.totals.weightAvgKg, "kg")}
                 </div>
+                <div className="text-muted-foreground">Δ {formatSigned(summary.deltas.weightAvgKg, "kg")}</div>
               </div>
-              <div>
-                <div className="text-muted-foreground">Weight change</div>
-                <div className="text-foreground">
-                  {formatValue(summary.totals.weightChangeKg, "kg")} · {formatSigned(summary.deltas.weightChangeKg, "kg")}
+              <div className="col-span-2">
+                <div className="text-muted-foreground">Weight change (period)</div>
+                <div className="text-foreground font-medium">
+                  {formatValue(summary.totals.weightChangeKg, "kg")}
+                </div>
+                <div className="text-muted-foreground">
+                  Δ {formatSigned(summary.deltas.weightChangeKg, "kg")}
                 </div>
               </div>
             </div>
@@ -99,7 +132,9 @@ export function ChatMessage({ message, onFollowUp }: ChatMessageProps) {
 
         {!isUser && message.dataUsed && (
           <div className="text-[11px] text-muted-foreground">
-            Data used: {message.dataUsed.range.start} → {message.dataUsed.range.end} · {message.dataUsed.counts.meals} meals · {message.dataUsed.counts.metrics} metrics · {message.dataUsed.counts.workouts} workouts
+            Data used: {message.dataUsed.range.start} → {message.dataUsed.range.end} ·{" "}
+            {message.dataUsed.counts.meals} meals · {message.dataUsed.counts.metrics} metrics ·{" "}
+            {message.dataUsed.counts.workouts} workouts
           </div>
         )}
 

@@ -15,7 +15,7 @@ const isWriteIntent = (message: string) =>
   WRITE_INTENT_PATTERNS.some((pattern) => pattern.test(message));
 
 export interface AssistantChatResult {
-  answer: string;
+  markdown: string;
   dataUsed: {
     range: { start: string; end: string };
     sources: Array<"meals" | "daily_metrics" | "workouts">;
@@ -47,10 +47,10 @@ const RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
-    answer: { type: "string" },
+    markdown: { type: "string" },
     followUps: { type: "array", items: { type: "string" }, maxItems: 3 },
   },
-  required: ["answer", "followUps"],
+  required: ["markdown", "followUps"],
 };
 
 export async function runAssistantChat(input: {
@@ -84,8 +84,7 @@ export async function runAssistantChat(input: {
 
   if (isWriteIntent(input.message)) {
     return {
-      answer:
-        "I can’t edit or log entries yet, but you can use the Log Meal, Log Workout, or Metrics screens to add data.",
+      markdown: `**Read‑only for now**\n- I can’t log or edit entries yet.\n- Use Log Meal, Log Workout, or Metrics to add data.`,
       dataUsed,
       summary: {
         period: { start: summary.period.start, end: summary.period.end },
@@ -135,7 +134,7 @@ export async function runAssistantChat(input: {
     throw new Error("Empty response from assistant");
   }
 
-  let parsed: { answer: string; followUps: string[] } | null = null;
+  let parsed: { markdown: string; followUps: string[] } | null = null;
   try {
     parsed = JSON.parse(outputText);
   } catch {
@@ -147,7 +146,7 @@ export async function runAssistantChat(input: {
   }
 
   return {
-    answer: parsed.answer,
+    markdown: parsed.markdown,
     dataUsed,
     summary: {
       period: { start: summary.period.start, end: summary.period.end },
