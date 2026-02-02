@@ -142,6 +142,10 @@ export async function runAssistantChat(input: {
     throw new Error("Failed to parse assistant response");
   }
 
+  if (!parsed) {
+    throw new Error("Assistant response was empty");
+  }
+
   return {
     answer: parsed.answer,
     dataUsed,
