@@ -37,6 +37,7 @@ interface ConversationInputProps {
   onEventResolved: (eventId: string) => void;
   onEventFailed: (eventId: string, error: string) => void;
   onRefresh: () => Promise<void>;
+  onOpenChat: (draft?: string, autoSend?: boolean) => void;
 }
 
 type Suggestion =
@@ -90,6 +91,7 @@ export function ConversationInput({
   onEventResolved,
   onEventFailed,
   onRefresh,
+  onOpenChat,
 }: ConversationInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [state, setState] = useState<RecordingState>("idle");
@@ -140,6 +142,14 @@ export function ConversationInput({
     setMetricType(null);
     resetRecorder();
   }, [resetRecorder]);
+
+  const handleOpenChat = useCallback(
+    (draft?: string) => {
+      onOpenChat(draft, false);
+      setIsExpanded(false);
+    },
+    [onOpenChat]
+  );
 
   const addOptimisticEvent = useCallback(
     (event: Omit<ConversationFeedEvent, "id" | "createdAt">) => {
@@ -674,10 +684,18 @@ export function ConversationInput({
                 onClick={() => setIsExpanded(true)}
                 className="flex-1 flex items-center gap-3 text-left group"
               >
-                <Sparkles className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
+                <Sparkles className="w-4 h-4 text-primary-strong/60 group-hover:text-primary-strong transition-colors" />
                 <span className="text-sm text-muted-foreground group-hover:text-foreground/80 transition-colors truncate">
                   Log a meal, workout, or ask a question...
                 </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleOpenChat()}
+                className="flex items-center justify-center w-10 h-10 rounded-full border border-border/60 bg-muted/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:bg-white/[0.06] dark:hover:bg-white/[0.12]"
+              >
+                <Sparkles className="w-4 h-4" />
               </button>
 
               {/* Mic Button - Hero Element */}
@@ -720,17 +738,27 @@ export function ConversationInput({
               {/* Header with collapse button */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
+                  <Sparkles className="w-4 h-4 text-primary-strong" />
                   <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Command Center
                   </span>
                 </div>
-                <button
-                  onClick={() => setIsExpanded(false)}
-                  className="flex items-center justify-center w-8 h-8 rounded-full bg-muted/60 hover:bg-muted transition-colors dark:bg-white/5 dark:hover:bg-white/10"
-                >
-                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenChat(inputValue)}
+                    className="flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/60 px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:bg-white/[0.06] dark:hover:bg-white/[0.12]"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Ask Coach
+                  </button>
+                  <button
+                    onClick={() => setIsExpanded(false)}
+                    className="flex items-center justify-center w-8 h-8 rounded-full bg-muted/60 hover:bg-muted transition-colors dark:bg-white/5 dark:hover:bg-white/10"
+                  >
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
               </div>
 
               {isAnalyzing ? (

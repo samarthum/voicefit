@@ -6,6 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TodaySummaryCard } from "@/components/today-summary-card";
 import { WeeklyTrendsCard } from "@/components/weekly-trends-card";
 import { ConversationInput } from "@/components/conversation-input";
+import { AskCoachCard } from "@/components/ask-coach-card";
+import { ChatSheet } from "@/components/chat-sheet";
 import { BottomNav } from "@/components/bottom-nav";
 import type { ConversationFeedEvent } from "@/components/conversation-item";
 import type { DashboardData } from "@/lib/types";
@@ -48,6 +50,9 @@ export default function DashboardPage() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [isStepsLoading, setIsStepsLoading] = useState(false);
   const stepsSyncId = useRef(0);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatDraft, setChatDraft] = useState<string | null>(null);
+  const [autoSendPrompt, setAutoSendPrompt] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     return new Date().toLocaleDateString("en-CA");
@@ -166,6 +171,12 @@ export default function DashboardPage() {
     fetchDashboard(selectedDate);
   }, [fetchDashboard, selectedDate]);
 
+  const handleOpenChat = useCallback((draft?: string, autoSend?: boolean) => {
+    setChatDraft(draft ?? null);
+    setAutoSendPrompt(Boolean(autoSend));
+    setIsChatOpen(true);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background pb-40">
       <Toaster />
@@ -200,7 +211,15 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: "200ms" }}>
+        <div className="animate-fade-up" style={{ animationDelay: "150ms" }}>
+          {isLoading ? (
+            <Skeleton className="h-[180px] w-full rounded-2xl" />
+          ) : (
+            <AskCoachCard onOpen={handleOpenChat} />
+          )}
+        </div>
+
+        <div className="animate-fade-up" style={{ animationDelay: "250ms" }}>
           {isLoading ? (
             <Skeleton className="h-[300px] w-full rounded-2xl" />
           ) : data ? (
@@ -220,10 +239,18 @@ export default function DashboardPage() {
             onEventResolved={handleEventResolved}
             onEventFailed={handleEventFailed}
             onRefresh={handleLogUpdated}
+            onOpenChat={handleOpenChat}
           />
         </div>
       </div>
       <BottomNav />
+
+      <ChatSheet
+        open={isChatOpen}
+        onOpenChange={setIsChatOpen}
+        initialPrompt={chatDraft}
+        autoSendPrompt={autoSendPrompt}
+      />
     </div>
   );
 }
