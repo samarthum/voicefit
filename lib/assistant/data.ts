@@ -24,6 +24,12 @@ export interface AssistantDataSnapshot {
     startedAt: Date;
     title: string;
     setCount: number;
+    sets: Array<{
+      exerciseName: string;
+      reps: number | null;
+      weightKg: number | null;
+      durationMinutes: number | null;
+    }>;
   }>;
 }
 
@@ -102,6 +108,14 @@ export async function getAssistantData(
       },
       orderBy: { startedAt: "desc" },
       include: {
+        sets: {
+          select: {
+            exerciseName: true,
+            reps: true,
+            weightKg: true,
+            durationMinutes: true,
+          },
+        },
         _count: { select: { sets: true } },
       },
     }),
@@ -114,6 +128,7 @@ export async function getAssistantData(
       startedAt: session.startedAt,
       title: session.title,
       setCount: session._count.sets,
+      sets: session.sets,
     })),
   };
 }

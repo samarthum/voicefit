@@ -56,9 +56,6 @@ export function useChatSession() {
         content: result.data.headline,
         highlights: result.data.highlights ?? [],
         status: undefined,
-        dataUsed: result.data.dataUsed,
-        summary: result.data.summary,
-        followUps: result.data.followUps,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to respond";

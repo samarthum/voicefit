@@ -40,31 +40,6 @@ export type EntryIntent = "meal" | "workout_set" | "weight" | "steps" | "questio
 export interface AssistantChatResponse {
   headline: string;
   highlights: string[];
-  dataUsed: {
-    range: { start: string; end: string };
-    sources: Array<"meals" | "daily_metrics" | "workouts">;
-    counts: { meals: number; metrics: number; workouts: number };
-  };
-  summary: {
-    period: { start: string; end: string };
-    previousPeriod: { start: string; end: string };
-    totals: {
-      calories: number;
-      steps: number | null;
-      workouts: number;
-      weightAvgKg: number | null;
-      weightChangeKg: number | null;
-    };
-    deltas: {
-      calories: number | null;
-      steps: number | null;
-      workouts: number | null;
-      weightAvgKg: number | null;
-      weightChangeKg: number | null;
-    };
-  };
-  followUps: string[];
-  readOnlyNotice?: string;
 }
 
 export type AssistantChatRole = "user" | "assistant";
@@ -75,9 +50,6 @@ export interface AssistantChatMessage {
   content: string;
   status?: "pending" | "error";
   highlights?: string[];
-  dataUsed?: AssistantChatResponse["dataUsed"];
-  summary?: AssistantChatResponse["summary"];
-  followUps?: string[];
 }
 
 export interface MetricInterpretation {

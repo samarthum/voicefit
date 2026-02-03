@@ -127,11 +127,7 @@ export function ChatSheet({ open, onOpenChange, initialPrompt }: ChatSheetProps)
           >
             {hasMessages ? (
               messages.map((message) => (
-                <ChatMessage
-                  key={message.id}
-                  message={message}
-                  onFollowUp={(prompt) => setDraft(prompt)}
-                />
+                <ChatMessage key={message.id} message={message} />
               ))
             ) : (
               emptyState

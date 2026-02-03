@@ -4,6 +4,7 @@ import { buildAssistantPrompt, ASSISTANT_SYSTEM_PROMPT } from "@/lib/assistant/p
 import { computeSummary } from "@/lib/assistant/metrics";
 
 export const DEFAULT_RANGE_DAYS = 7;
+const EXTENDED_RANGE_DAYS = 28;
 
 const WRITE_INTENT_PATTERNS: RegExp[] = [
   /\b(log|add|update|edit|delete|remove|set|save|record|track)\b/i,
@@ -14,34 +15,38 @@ const WRITE_INTENT_PATTERNS: RegExp[] = [
 const isWriteIntent = (message: string) =>
   WRITE_INTENT_PATTERNS.some((pattern) => pattern.test(message));
 
+const WEEKDAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+const getWeekdayFromText = (message: string): string | null => {
+  const match = WEEKDAY_NAMES.find((day) =>
+    new RegExp(`\\b${day}\\b`, "i").test(message)
+  );
+  return match ?? null;
+};
+
+const getTomorrowWeekday = (timezone?: string) => {
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  return tomorrow.toLocaleDateString("en-US", { weekday: "long", timeZone: timezone });
+};
+
+const needsWeekdayContext = (message: string) =>
+  /\btomorrow\b|\bnext\b|\bmonday\b|\btuesday\b|\bwednesday\b|\bthursday\b|\bfriday\b|\bsaturday\b|\bsunday\b/i.test(
+    message
+  );
+
 export interface AssistantChatResult {
   headline: string;
   highlights: string[];
-  dataUsed: {
-    range: { start: string; end: string };
-    sources: Array<"meals" | "daily_metrics" | "workouts">;
-    counts: { meals: number; metrics: number; workouts: number };
-  };
-  summary: {
-    period: { start: string; end: string };
-    previousPeriod: { start: string; end: string };
-    totals: {
-      calories: number;
-      steps: number | null;
-      workouts: number;
-      weightAvgKg: number | null;
-      weightChangeKg: number | null;
-    };
-    deltas: {
-      calories: number | null;
-      steps: number | null;
-      workouts: number | null;
-      weightAvgKg: number | null;
-      weightChangeKg: number | null;
-    };
-  };
-  followUps: string[];
-  readOnlyNotice?: string;
 }
 
 const RESPONSE_SCHEMA = {
@@ -50,9 +55,8 @@ const RESPONSE_SCHEMA = {
   properties: {
     headline: { type: "string" },
     highlights: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 3 },
-    followUps: { type: "array", items: { type: "string" }, maxItems: 3 },
   },
-  required: ["headline", "highlights", "followUps"],
+  required: ["headline", "highlights"],
 };
 
 export async function runAssistantChat(input: {
@@ -60,7 +64,10 @@ export async function runAssistantChat(input: {
   message: string;
   timezone?: string;
 }): Promise<AssistantChatResult> {
-  const range = getRange(DEFAULT_RANGE_DAYS, input.timezone);
+  const rangeDays = needsWeekdayContext(input.message)
+    ? EXTENDED_RANGE_DAYS
+    : DEFAULT_RANGE_DAYS;
+  const range = getRange(rangeDays, input.timezone);
   const previousRange = getPreviousRange(range, input.timezone);
 
   const [currentData, previousData] = await Promise.all([
@@ -69,20 +76,6 @@ export async function runAssistantChat(input: {
   ]);
 
   const summary = computeSummary(currentData, previousData, range, previousRange);
-  const sources: Array<"meals" | "daily_metrics" | "workouts"> = [
-    "meals",
-    "daily_metrics",
-    "workouts",
-  ];
-  const dataUsed = {
-    range: { start: range.start, end: range.end },
-    sources,
-    counts: {
-      meals: currentData.meals.length,
-      metrics: currentData.metrics.length,
-      workouts: currentData.workouts.length,
-    },
-  };
 
   if (isWriteIntent(input.message)) {
     return {
@@ -91,26 +84,20 @@ export async function runAssistantChat(input: {
         "I can’t log or edit entries yet.",
         "Use Log Meal, Log Workout, or Metrics to add data.",
       ],
-      dataUsed,
-      summary: {
-        period: { start: summary.period.start, end: summary.period.end },
-        previousPeriod: {
-          start: summary.previousPeriod.start,
-          end: summary.previousPeriod.end,
-        },
-        totals: summary.totals,
-        deltas: summary.deltas,
-      },
-      followUps: ["Summarize my week", "How is my calorie trend?", "Weight trend lately"],
-      readOnlyNotice: "Read‑only mode",
     };
   }
+
+  const targetWeekday =
+    getWeekdayFromText(input.message) ??
+    (/\btomorrow\b/i.test(input.message) ? getTomorrowWeekday(input.timezone) : null);
 
   const prompt = buildAssistantPrompt({
     question: input.message,
     summary,
     currentData,
     previousData,
+    targetWeekday,
+    timezone: input.timezone,
   });
 
   const response = await openai.responses.create({
@@ -140,7 +127,7 @@ export async function runAssistantChat(input: {
     throw new Error("Empty response from assistant");
   }
 
-  let parsed: { headline: string; highlights: string[]; followUps: string[] } | null = null;
+  let parsed: { headline: string; highlights: string[] } | null = null;
   try {
     parsed = JSON.parse(outputText);
   } catch {
@@ -154,16 +141,5 @@ export async function runAssistantChat(input: {
   return {
     headline: parsed.headline,
     highlights: parsed.highlights ?? [],
-    dataUsed,
-    summary: {
-      period: { start: summary.period.start, end: summary.period.end },
-      previousPeriod: {
-        start: summary.previousPeriod.start,
-        end: summary.previousPeriod.end,
-      },
-      totals: summary.totals,
-      deltas: summary.deltas,
-    },
-    followUps: parsed.followUps ?? [],
   };
 }

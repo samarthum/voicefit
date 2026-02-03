@@ -85,44 +85,6 @@ export const assistantChatRequestSchema = z.object({
 export const assistantChatResponseSchema = z.object({
   headline: z.string(),
   highlights: z.array(z.string()).min(1).max(3),
-  dataUsed: z.object({
-    range: z.object({
-      start: z.string(),
-      end: z.string(),
-    }),
-    sources: z.array(z.enum(["meals", "daily_metrics", "workouts"])),
-    counts: z.object({
-      meals: z.number().int().min(0),
-      metrics: z.number().int().min(0),
-      workouts: z.number().int().min(0),
-    }),
-  }),
-  summary: z.object({
-    period: z.object({
-      start: z.string(),
-      end: z.string(),
-    }),
-    previousPeriod: z.object({
-      start: z.string(),
-      end: z.string(),
-    }),
-    totals: z.object({
-      calories: z.number(),
-      steps: z.number().nullable(),
-      workouts: z.number(),
-      weightAvgKg: z.number().nullable(),
-      weightChangeKg: z.number().nullable(),
-    }),
-    deltas: z.object({
-      calories: z.number().nullable(),
-      steps: z.number().nullable(),
-      workouts: z.number().nullable(),
-      weightAvgKg: z.number().nullable(),
-      weightChangeKg: z.number().nullable(),
-    }),
-  }),
-  followUps: z.array(z.string()).max(3),
-  readOnlyNotice: z.string().optional(),
 });
 
 // Create meal request
