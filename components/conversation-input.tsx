@@ -678,28 +678,31 @@ export function ConversationInput({
           )}
         >
           <div className="overflow-hidden">
-            <div className="flex items-center gap-3 p-2 pl-4">
+            <div className="flex items-center gap-2 p-2 pl-4">
               {/* Expand trigger / hint text */}
               <button
                 onClick={() => setIsExpanded(true)}
-                className="flex-1 flex items-center gap-3 text-left group"
+                className="flex-1 min-w-0 flex items-center gap-2 text-left group"
               >
-                <Sparkles className="w-4 h-4 text-primary-strong/60 group-hover:text-primary-strong transition-colors" />
+                <Sparkles className="w-4 h-4 text-primary-strong/60 group-hover:text-primary-strong transition-colors shrink-0" />
                 <span className="text-sm text-muted-foreground group-hover:text-foreground/80 transition-colors truncate">
-                  Log a meal, workout, or ask a question...
+                  <span className="sm:hidden">Log or ask…</span>
+                  <span className="hidden sm:inline">
+                    Log a meal, workout, or ask a question...
+                  </span>
                 </span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleOpenChat()}
-                className="flex items-center justify-center w-10 h-10 rounded-full border border-border/60 bg-muted/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:bg-white/[0.06] dark:hover:bg-white/[0.12]"
+                className="hidden sm:flex items-center justify-center w-10 h-10 rounded-full border border-border/60 bg-muted/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:bg-white/[0.06] dark:hover:bg-white/[0.12]"
               >
                 <Sparkles className="w-4 h-4" />
               </button>
 
               {/* Mic Button - Hero Element */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 {/* Pulse ring animation */}
                 {!isRecording && !isBusy && (
                   <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse-ring" />

@@ -28,7 +28,7 @@ export function ChatComposer({ value, onChange, onSend, disabled }: ChatComposer
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Ask about calories, workouts, or trends..."
-        className="min-h-[72px] resize-none border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+        className="min-h-[72px] resize-none border-0 bg-transparent px-1 py-1 text-sm leading-relaxed shadow-none focus-visible:ring-0"
       />
       <div className="mt-2 flex items-center justify-between">
         <span className="text-[11px] text-muted-foreground">Read‑only coach</span>
