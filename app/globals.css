@@ -34,6 +34,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -73,8 +74,9 @@
   --popover-foreground: #1f2937;
 
   /* Primary (voice/action) */
-  --primary: #16a34a;
-  --primary-foreground: #f0fdf4;
+  --primary: #6ee7b7;
+  --primary-strong: #16a34a;
+  --primary-foreground: #0b1f14;
 
   /* Secondary (accented UI) */
   --secondary: #3b82f6;
@@ -94,34 +96,34 @@
   /* Borders & Inputs */
   --border: rgba(15, 23, 42, 0.12);
   --input: rgba(15, 23, 42, 0.08);
-  --ring: rgba(22, 163, 74, 0.25);
+  --ring: rgba(110, 231, 183, 0.4);
 
   /* Chart Colors */
   --chart-1: #f97316;
-  --chart-2: #22c55e;
+  --chart-2: #6ee7b7;
   --chart-3: #3b82f6;
   --chart-4: #a855f7;
   --chart-5: #f472b6;
 
   /* Semantic Colors - Meal Types */
   --breakfast: #f97316;
-  --lunch: #22c55e;
+  --lunch: #6ee7b7;
   --dinner: #3b82f6;
   --snack: #a855f7;
 
   /* Status Colors */
-  --success: #22c55e;
+  --success: #6ee7b7;
   --warning: #f59e0b;
 
   /* Sidebar */
   --sidebar: #ffffff;
   --sidebar-foreground: #1f2937;
-  --sidebar-primary: #16a34a;
-  --sidebar-primary-foreground: #f0fdf4;
+  --sidebar-primary: #6ee7b7;
+  --sidebar-primary-foreground: #0b1f14;
   --sidebar-accent: #f1f5f9;
   --sidebar-accent-foreground: #1f2937;
   --sidebar-border: rgba(15, 23, 42, 0.1);
-  --sidebar-ring: rgba(34, 197, 94, 0.25);
+  --sidebar-ring: rgba(110, 231, 183, 0.4);
 }
 
 .dark {
@@ -132,6 +134,7 @@
   --popover: #141416;
   --popover-foreground: #fafafa;
   --primary: #22c55e;
+  --primary-strong: #22c55e;
   --primary-foreground: #0a0a0b;
   --secondary: #3b82f6;
   --secondary-foreground: #f8fafc;

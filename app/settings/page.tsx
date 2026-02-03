@@ -255,7 +255,7 @@ function SettingsPageContent() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 font-display text-xl">
                   <div className="p-2 rounded-xl bg-primary/10">
-                    <Target className="h-5 w-5 text-primary" />
+                    <Target className="h-5 w-5 text-primary-strong" />
                   </div>
                   Daily Goals
                 </CardTitle>
@@ -315,7 +315,7 @@ function SettingsPageContent() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 font-display text-xl">
                   <div className="p-2 rounded-xl bg-primary/10">
-                    <Activity className="h-5 w-5 text-primary" />
+                    <Activity className="h-5 w-5 text-primary-strong" />
                   </div>
                   Fitbit
                 </CardTitle>

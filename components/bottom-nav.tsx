@@ -46,7 +46,7 @@ export function BottomNav({ className }: BottomNavProps) {
                   "flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl",
                   "transition-all duration-300",
                   isActive
-                    ? "text-primary bg-primary/10 scale-105"
+                    ? "text-primary-strong bg-primary/10 scale-105"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                 )}
               >

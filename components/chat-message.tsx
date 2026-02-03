@@ -34,8 +34,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
             {highlights.length > 0 && (
               <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                 {highlights.map((highlight) => (
-                  <li key={highlight} className="flex gap-2">
-                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary/70" />
+                  <li key={highlight} className="flex gap-2 leading-relaxed">
+                    <span className="text-muted-foreground/60">—</span>
                     <span>{highlight}</span>
                   </li>
                 ))}

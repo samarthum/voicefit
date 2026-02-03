@@ -37,7 +37,7 @@ interface ConversationInputProps {
   onEventResolved: (eventId: string) => void;
   onEventFailed: (eventId: string, error: string) => void;
   onRefresh: () => Promise<void>;
-  onOpenChat: (draft?: string) => void;
+  onOpenChat: (draft?: string, autoSend?: boolean) => void;
 }
 
 type Suggestion =
@@ -145,7 +145,7 @@ export function ConversationInput({
 
   const handleOpenChat = useCallback(
     (draft?: string) => {
-      onOpenChat(draft);
+      onOpenChat(draft, false);
       setIsExpanded(false);
     },
     [onOpenChat]
@@ -684,7 +684,7 @@ export function ConversationInput({
                 onClick={() => setIsExpanded(true)}
                 className="flex-1 flex items-center gap-3 text-left group"
               >
-                <Sparkles className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
+                <Sparkles className="w-4 h-4 text-primary-strong/60 group-hover:text-primary-strong transition-colors" />
                 <span className="text-sm text-muted-foreground group-hover:text-foreground/80 transition-colors truncate">
                   Log a meal, workout, or ask a question...
                 </span>
@@ -738,7 +738,7 @@ export function ConversationInput({
               {/* Header with collapse button */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
+                  <Sparkles className="w-4 h-4 text-primary-strong" />
                   <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Command Center
                   </span>

@@ -13,6 +13,7 @@ interface ChatSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialPrompt?: string | null;
+  autoSendPrompt?: boolean;
 }
 
 const PROMPT_STARTERS = [
@@ -29,23 +30,35 @@ const QUICK_ACTIONS = [
   { label: "Log weight", href: "/metrics" },
 ];
 
-export function ChatSheet({ open, onOpenChange, initialPrompt }: ChatSheetProps) {
+export function ChatSheet({
+  open,
+  onOpenChange,
+  initialPrompt,
+  autoSendPrompt = false,
+}: ChatSheetProps) {
   const router = useRouter();
   const { messages, hasMessages, isSending, sendMessage, resetSession } =
     useChatSession();
   const [draft, setDraft] = useState(initialPrompt ?? "");
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const autoSentRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (open && initialPrompt) {
-      setDraft(initialPrompt);
+    if (!open) return;
+    if (!initialPrompt) return;
+    setDraft(initialPrompt);
+    if (autoSendPrompt && autoSentRef.current !== initialPrompt) {
+      autoSentRef.current = initialPrompt;
+      setDraft("");
+      void sendMessage(initialPrompt);
     }
-  }, [open, initialPrompt]);
+  }, [autoSendPrompt, initialPrompt, open, sendMessage]);
 
   useEffect(() => {
     if (!open) {
       resetSession();
       setDraft("");
+      autoSentRef.current = null;
     }
   }, [open, resetSession]);
 
@@ -89,7 +102,10 @@ export function ChatSheet({ open, onOpenChange, initialPrompt }: ChatSheetProps)
             <button
               key={prompt}
               type="button"
-              onClick={() => setDraft(prompt)}
+              onClick={async () => {
+                setDraft("");
+                await sendMessage(prompt);
+              }}
               className="rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted"
             >
               {prompt}
@@ -98,7 +114,7 @@ export function ChatSheet({ open, onOpenChange, initialPrompt }: ChatSheetProps)
         </div>
       </div>
     ),
-    []
+    [sendMessage]
   );
 
   return (
@@ -113,7 +129,7 @@ export function ChatSheet({ open, onOpenChange, initialPrompt }: ChatSheetProps)
         <div className="flex h-full flex-col">
           <SheetHeader className="border-b border-border/60 px-5 pb-3 pt-6">
             <SheetTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4 text-primary" />
+              <Sparkles className="h-4 w-4 text-primary-strong" />
               Coach
             </SheetTitle>
             <p className="text-xs text-muted-foreground">

@@ -52,6 +52,7 @@ export default function DashboardPage() {
   const stepsSyncId = useRef(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatDraft, setChatDraft] = useState<string | null>(null);
+  const [autoSendPrompt, setAutoSendPrompt] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     return new Date().toLocaleDateString("en-CA");
@@ -170,8 +171,9 @@ export default function DashboardPage() {
     fetchDashboard(selectedDate);
   }, [fetchDashboard, selectedDate]);
 
-  const handleOpenChat = useCallback((draft?: string) => {
+  const handleOpenChat = useCallback((draft?: string, autoSend?: boolean) => {
     setChatDraft(draft ?? null);
+    setAutoSendPrompt(Boolean(autoSend));
     setIsChatOpen(true);
   }, []);
 
@@ -210,7 +212,11 @@ export default function DashboardPage() {
         </div>
 
         <div className="animate-fade-up" style={{ animationDelay: "150ms" }}>
-          <AskCoachCard onOpen={() => handleOpenChat()} />
+          {isLoading ? (
+            <Skeleton className="h-[180px] w-full rounded-2xl" />
+          ) : (
+            <AskCoachCard onOpen={handleOpenChat} />
+          )}
         </div>
 
         <div className="animate-fade-up" style={{ animationDelay: "250ms" }}>
@@ -243,6 +249,7 @@ export default function DashboardPage() {
         open={isChatOpen}
         onOpenChange={setIsChatOpen}
         initialPrompt={chatDraft}
+        autoSendPrompt={autoSendPrompt}
       />
     </div>
   );
