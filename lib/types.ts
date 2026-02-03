@@ -38,7 +38,8 @@ export type EntryIntent = "meal" | "workout_set" | "weight" | "steps" | "questio
 
 // Assistant chat (read-only)
 export interface AssistantChatResponse {
-  markdown: string;
+  headline: string;
+  highlights: string[];
   dataUsed: {
     range: { start: string; end: string };
     sources: Array<"meals" | "daily_metrics" | "workouts">;
@@ -73,6 +74,7 @@ export interface AssistantChatMessage {
   role: AssistantChatRole;
   content: string;
   status?: "pending" | "error";
+  highlights?: string[];
   dataUsed?: AssistantChatResponse["dataUsed"];
   summary?: AssistantChatResponse["summary"];
   followUps?: string[];

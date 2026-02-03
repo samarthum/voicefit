@@ -83,7 +83,8 @@ export const assistantChatRequestSchema = z.object({
 });
 
 export const assistantChatResponseSchema = z.object({
-  markdown: z.string(),
+  headline: z.string(),
+  highlights: z.array(z.string()).min(1).max(3),
   dataUsed: z.object({
     range: z.object({
       start: z.string(),

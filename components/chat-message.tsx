@@ -1,7 +1,5 @@
 "use client";
 
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AssistantChatMessage } from "@/lib/types";
@@ -33,109 +31,108 @@ const formatValue = (value: number | null, suffix: string) => {
   return `${rounded} ${suffix}`.trim();
 };
 
+const StatBlock = ({
+  label,
+  value,
+  delta,
+}: {
+  label: string;
+  value: string;
+  delta: string;
+}) => (
+  <div className="rounded-xl border border-border/60 bg-muted/40 px-3 py-2">
+    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+    <div className="text-sm font-semibold text-foreground">{value}</div>
+    <div className="text-[11px] text-muted-foreground">Δ {delta}</div>
+  </div>
+);
+
 export function ChatMessage({ message, onFollowUp }: ChatMessageProps) {
   const isUser = message.role === "user";
   const summary = message.summary;
+  const highlights = message.highlights ?? [];
 
   return (
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
-      <div className={cn("max-w-[90%] space-y-3", isUser && "items-end")}>
-        <div
-          className={cn(
-            "rounded-2xl px-4 py-3 text-sm leading-relaxed",
-            isUser
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "border border-border/60 bg-muted/50 text-foreground",
-            message.status === "error" && "border-destructive/50 bg-destructive/10 text-destructive"
-          )}
-        >
-          {!isUser && (
-            <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5" />
-              Coach
-            </div>
-          )}
-          {isUser ? (
+      <div className={cn("max-w-[94%] space-y-3", isUser && "items-end")}>
+        {isUser ? (
+          <div className="rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground shadow-sm">
             <p className="text-sm leading-relaxed">{message.content}</p>
-          ) : (
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                p: ({ children }) => (
-                  <p className="text-sm leading-relaxed text-foreground">{children}</p>
-                ),
-                strong: ({ children }) => (
-                  <span className="text-base font-medium text-foreground">{children}</span>
-                ),
-                ul: ({ children }) => (
-                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground">{children}</ul>
-                ),
-                li: ({ children }) => (
-                  <li className="flex gap-2">
-                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary/70" />
-                    <span>{children}</span>
-                  </li>
-                ),
-              }}
-            >
-              {message.content}
-            </ReactMarkdown>
-          )}
-        </div>
-
-        {!isUser && summary && (
-          <div className="rounded-2xl border border-border/60 bg-background/60 px-4 py-3 text-xs text-muted-foreground">
-            <div className="mb-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-              Summary · {summary.period.start} → {summary.period.end}
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <div className="text-muted-foreground">Calories</div>
-                <div className="text-foreground font-medium">
-                  {formatValue(summary.totals.calories, "kcal")}
-                </div>
-                <div className="text-muted-foreground">Δ {formatSigned(summary.deltas.calories, "kcal")}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Steps</div>
-                <div className="text-foreground font-medium">
-                  {formatValue(summary.totals.steps, "steps")}
-                </div>
-                <div className="text-muted-foreground">Δ {formatSigned(summary.deltas.steps, "steps")}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Workouts</div>
-                <div className="text-foreground font-medium">
-                  {formatValue(summary.totals.workouts, "sessions")}
-                </div>
-                <div className="text-muted-foreground">Δ {formatSigned(summary.deltas.workouts, "sessions")}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Weight avg</div>
-                <div className="text-foreground font-medium">
-                  {formatValue(summary.totals.weightAvgKg, "kg")}
-                </div>
-                <div className="text-muted-foreground">Δ {formatSigned(summary.deltas.weightAvgKg, "kg")}</div>
-              </div>
-              <div className="col-span-2">
-                <div className="text-muted-foreground">Weight change (period)</div>
-                <div className="text-foreground font-medium">
-                  {formatValue(summary.totals.weightChangeKg, "kg")}
-                </div>
-                <div className="text-muted-foreground">
-                  Δ {formatSigned(summary.deltas.weightChangeKg, "kg")}
-                </div>
-              </div>
-            </div>
           </div>
+        ) : (
+          <>
+            {summary && (
+              <div className="rounded-2xl border border-border/60 bg-card/70 px-4 py-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    Summary
+                  </div>
+                  <span>
+                    {summary.period.start} → {summary.period.end}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <StatBlock
+                    label="Calories"
+                    value={formatValue(summary.totals.calories, "kcal")}
+                    delta={formatSigned(summary.deltas.calories, "kcal")}
+                  />
+                  <StatBlock
+                    label="Steps"
+                    value={formatValue(summary.totals.steps, "steps")}
+                    delta={formatSigned(summary.deltas.steps, "steps")}
+                  />
+                  <StatBlock
+                    label="Workouts"
+                    value={formatValue(summary.totals.workouts, "sessions")}
+                    delta={formatSigned(summary.deltas.workouts, "sessions")}
+                  />
+                  <StatBlock
+                    label="Weight avg"
+                    value={formatValue(summary.totals.weightAvgKg, "kg")}
+                    delta={formatSigned(summary.deltas.weightAvgKg, "kg")}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div
+              className={cn(
+                "rounded-2xl border border-border/60 bg-muted/50 px-4 py-3 text-foreground",
+                message.status === "error" && "border-destructive/50 bg-destructive/10 text-destructive"
+              )}
+            >
+              <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                <Sparkles className="h-3.5 w-3.5" />
+                Coach
+              </div>
+              <p className="text-sm font-medium leading-relaxed">{message.content}</p>
+              {highlights.length > 0 && (
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  {highlights.map((highlight) => (
+                    <li key={highlight} className="flex gap-2">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary/70" />
+                      <span>{highlight}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </>
         )}
 
         {!isUser && message.dataUsed && (
-          <div className="text-[11px] text-muted-foreground">
-            Data used: {message.dataUsed.range.start} → {message.dataUsed.range.end} ·{" "}
-            {message.dataUsed.counts.meals} meals · {message.dataUsed.counts.metrics} metrics ·{" "}
-            {message.dataUsed.counts.workouts} workouts
-          </div>
+          <details className="text-[11px] text-muted-foreground">
+            <summary className="cursor-pointer select-none text-[11px] uppercase tracking-wide text-muted-foreground">
+              Data used
+            </summary>
+            <div className="mt-1">
+              {message.dataUsed.range.start} → {message.dataUsed.range.end} ·{" "}
+              {message.dataUsed.counts.meals} meals · {message.dataUsed.counts.metrics} metrics ·{" "}
+              {message.dataUsed.counts.workouts} workouts
+            </div>
+          </details>
         )}
 
         {!isUser && message.followUps && message.followUps.length > 0 && (

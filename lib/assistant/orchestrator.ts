@@ -15,7 +15,8 @@ const isWriteIntent = (message: string) =>
   WRITE_INTENT_PATTERNS.some((pattern) => pattern.test(message));
 
 export interface AssistantChatResult {
-  markdown: string;
+  headline: string;
+  highlights: string[];
   dataUsed: {
     range: { start: string; end: string };
     sources: Array<"meals" | "daily_metrics" | "workouts">;
@@ -47,10 +48,11 @@ const RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
-    markdown: { type: "string" },
+    headline: { type: "string" },
+    highlights: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 3 },
     followUps: { type: "array", items: { type: "string" }, maxItems: 3 },
   },
-  required: ["markdown", "followUps"],
+  required: ["headline", "highlights", "followUps"],
 };
 
 export async function runAssistantChat(input: {
@@ -84,7 +86,11 @@ export async function runAssistantChat(input: {
 
   if (isWriteIntent(input.message)) {
     return {
-      markdown: `**Read‑only for now**\n- I can’t log or edit entries yet.\n- Use Log Meal, Log Workout, or Metrics to add data.`,
+      headline: "Read‑only for now",
+      highlights: [
+        "I can’t log or edit entries yet.",
+        "Use Log Meal, Log Workout, or Metrics to add data.",
+      ],
       dataUsed,
       summary: {
         period: { start: summary.period.start, end: summary.period.end },
@@ -134,7 +140,7 @@ export async function runAssistantChat(input: {
     throw new Error("Empty response from assistant");
   }
 
-  let parsed: { markdown: string; followUps: string[] } | null = null;
+  let parsed: { headline: string; highlights: string[]; followUps: string[] } | null = null;
   try {
     parsed = JSON.parse(outputText);
   } catch {
@@ -146,7 +152,8 @@ export async function runAssistantChat(input: {
   }
 
   return {
-    markdown: parsed.markdown,
+    headline: parsed.headline,
+    highlights: parsed.highlights ?? [],
     dataUsed,
     summary: {
       period: { start: summary.period.start, end: summary.period.end },
