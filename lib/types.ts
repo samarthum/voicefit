@@ -36,6 +36,22 @@ export interface ConversationEvent {
 
 export type EntryIntent = "meal" | "workout_set" | "weight" | "steps" | "question";
 
+// Assistant chat (read-only)
+export interface AssistantChatResponse {
+  headline: string;
+  highlights: string[];
+}
+
+export type AssistantChatRole = "user" | "assistant";
+
+export interface AssistantChatMessage {
+  id: string;
+  role: AssistantChatRole;
+  content: string;
+  status?: "pending" | "error";
+  highlights?: string[];
+}
+
 export interface MetricInterpretation {
   value: number;
   confidence: number;

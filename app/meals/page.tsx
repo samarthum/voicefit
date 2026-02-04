@@ -269,7 +269,7 @@ export default function MealsPage() {
         ) : meals.length === 0 ? (
           <div className="text-center py-16">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-              <Utensils className="w-8 h-8 text-primary" />
+              <Utensils className="w-8 h-8 text-primary-strong" />
             </div>
             <p className="text-foreground font-medium">No meals logged yet</p>
             <p className="text-sm text-muted-foreground mt-1">

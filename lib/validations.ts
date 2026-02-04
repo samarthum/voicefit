@@ -76,6 +76,17 @@ export const workoutSetInterpretationSchema = z.object({
   assumptions: z.array(z.string()),
 });
 
+// Assistant chat (read-only)
+export const assistantChatRequestSchema = z.object({
+  message: z.string().min(1, "Message is required"),
+  timezone: z.string().optional(),
+});
+
+export const assistantChatResponseSchema = z.object({
+  headline: z.string(),
+  highlights: z.array(z.string()).min(1).max(3),
+});
+
 // Create meal request
 export const createMealSchema = z.object({
   eatenAt: z.string().datetime(),
