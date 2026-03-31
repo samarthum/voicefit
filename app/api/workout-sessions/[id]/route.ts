@@ -16,7 +16,7 @@ interface RouteParams {
 // GET /api/workout-sessions/[id] - Get single session with sets
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const { id } = await params;
 
     const session = await prisma.workoutSession.findFirst({
@@ -35,7 +35,41 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return notFoundResponse("Workout session");
     }
 
-    return successResponse(session);
+    // Fetch most recent set per exercise from prior sessions for the "Previous" column
+    const exerciseNames = [...new Set(session.sets.map((s) => s.exerciseName))];
+    let previousBests: Record<string, { weightKg: number | null; reps: number | null; durationMinutes: number | null }> = {};
+
+    if (exerciseNames.length > 0) {
+      const priorSets = await prisma.workoutSet.findMany({
+        where: {
+          exerciseName: { in: exerciseNames },
+          session: {
+            userId: user.id,
+            startedAt: { lt: session.startedAt },
+          },
+        },
+        orderBy: { performedAt: "desc" },
+        select: {
+          exerciseName: true,
+          exerciseType: true,
+          weightKg: true,
+          reps: true,
+          durationMinutes: true,
+        },
+      });
+
+      for (const set of priorSets) {
+        if (!previousBests[set.exerciseName]) {
+          previousBests[set.exerciseName] = {
+            weightKg: set.weightKg,
+            reps: set.reps,
+            durationMinutes: set.durationMinutes,
+          };
+        }
+      }
+    }
+
+    return successResponse({ ...session, previousBests });
   } catch (error) {
     console.error("Get workout session error:", error);
     if (error instanceof Error && error.message === "Unauthorized") {
@@ -48,7 +82,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/workout-sessions/[id] - Update session (e.g., end it)
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const { id } = await params;
 
     const existingSession = await prisma.workoutSession.findFirst({
@@ -95,7 +129,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/workout-sessions/[id] - Delete session and all sets
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const { id } = await params;
 
     const existingSession = await prisma.workoutSession.findFirst({
