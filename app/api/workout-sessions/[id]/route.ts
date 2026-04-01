@@ -35,41 +35,39 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return notFoundResponse("Workout session");
     }
 
-    // Fetch most recent set per exercise from prior sessions for the "Previous" column
+    // Fetch all sets from the most recent prior session per exercise for the "Previous" column
     const exerciseNames = [...new Set(session.sets.map((s) => s.exerciseName))];
-    let previousBests: Record<string, { weightKg: number | null; reps: number | null; durationMinutes: number | null }> = {};
+    const previousSets: Record<string, Array<{ weightKg: number | null; reps: number | null; durationMinutes: number | null }>> = {};
 
-    if (exerciseNames.length > 0) {
-      const priorSets = await prisma.workoutSet.findMany({
+    for (const exerciseName of exerciseNames) {
+      // Find the most recent prior set to identify its session
+      const mostRecentPriorSet = await prisma.workoutSet.findFirst({
         where: {
-          exerciseName: { in: exerciseNames },
+          exerciseName,
           session: {
             userId: user.id,
             startedAt: { lt: session.startedAt },
           },
         },
         orderBy: { performedAt: "desc" },
-        select: {
-          exerciseName: true,
-          exerciseType: true,
-          weightKg: true,
-          reps: true,
-          durationMinutes: true,
-        },
+        select: { sessionId: true },
       });
 
-      for (const set of priorSets) {
-        if (!previousBests[set.exerciseName]) {
-          previousBests[set.exerciseName] = {
-            weightKg: set.weightKg,
-            reps: set.reps,
-            durationMinutes: set.durationMinutes,
-          };
-        }
+      if (mostRecentPriorSet) {
+        // Fetch all sets from that session for this exercise, ordered chronologically
+        const setsFromPriorSession = await prisma.workoutSet.findMany({
+          where: {
+            exerciseName,
+            sessionId: mostRecentPriorSet.sessionId,
+          },
+          orderBy: { performedAt: "asc" },
+          select: { weightKg: true, reps: true, durationMinutes: true },
+        });
+        previousSets[exerciseName] = setsFromPriorSession;
       }
     }
 
-    return successResponse({ ...session, previousBests });
+    return successResponse({ ...session, previousSets });
   } catch (error) {
     console.error("Get workout session error:", error);
     if (error instanceof Error && error.message === "Unauthorized") {
