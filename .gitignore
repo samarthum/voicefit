@@ -44,3 +44,6 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# stray expo app.json from eas init running in this directory
+/app.json
