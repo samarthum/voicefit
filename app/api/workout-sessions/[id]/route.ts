@@ -108,6 +108,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (parseResult.data.endedAt) {
       updateData.endedAt = new Date(parseResult.data.endedAt);
     }
+    if (parseResult.data.exerciseNotes !== undefined) {
+      updateData.exerciseNotes = parseResult.data.exerciseNotes;
+    }
 
     const session = await prisma.workoutSession.update({
       where: { id },

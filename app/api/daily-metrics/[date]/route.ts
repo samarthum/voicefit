@@ -16,7 +16,7 @@ interface RouteParams {
 // GET /api/daily-metrics/[date] - Get metrics for a specific date
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const { date } = await params;
 
     // Validate date format
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/daily-metrics/[date] - Update metrics for a specific date
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const { date } = await params;
 
     // Validate date format
@@ -104,7 +104,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/daily-metrics/[date] - Delete metrics for a specific date
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const { date } = await params;
 
     // Validate date format

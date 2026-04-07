@@ -7,6 +7,11 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
+  if (request.nextUrl.pathname.startsWith("/api")) {
+    // API handlers apply auth and return JSON response envelopes.
+    return;
+  }
+
   if (!isPublicRoute(request)) {
     await auth.protect();
   }

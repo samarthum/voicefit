@@ -22,7 +22,7 @@ type SessionWithCount = {
 // GET /api/workout-sessions - List workout sessions
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const { searchParams } = new URL(request.url);
     const queryResult = listQuerySchema.safeParse({
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
 // POST /api/workout-sessions - Create workout session
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const body = await request.json();
     const parseResult = createWorkoutSessionSchema.safeParse(body);

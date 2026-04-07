@@ -19,7 +19,7 @@ type RecentMeal = { id: string; description: string; calories: number; mealType:
 // GET /api/dashboard - Get dashboard data
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const { searchParams } = new URL(request.url);
     const timezone = searchParams.get("timezone") || "UTC";

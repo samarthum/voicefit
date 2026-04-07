@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import {
   errorResponse,
   successResponse,
@@ -209,12 +208,7 @@ async function answerQuestion(userId: string, question: string, timezone?: strin
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return unauthorizedResponse();
-    }
-
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const body = await request.json();
     const parseResult = interpretEntryRequestSchema.safeParse(body);
 
@@ -319,6 +313,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Interpret entry error:", error);
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return unauthorizedResponse();
+    }
     const message =
       error instanceof Error
         ? error.message

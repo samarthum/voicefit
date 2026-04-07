@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import {
   errorResponse,
@@ -6,9 +7,9 @@ import {
   unauthorizedResponse,
 } from "@/lib/api-helpers";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const connection = await prisma.fitbitConnection.findUnique({
       where: { userId: user.id },
     });

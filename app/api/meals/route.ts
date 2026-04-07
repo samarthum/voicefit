@@ -12,7 +12,7 @@ import { createMealSchema, listQuerySchema } from "@/lib/validations";
 // GET /api/meals - List meals
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 // POST /api/meals - Create meal
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const body = await request.json();
     const parseResult = createMealSchema.safeParse(body);

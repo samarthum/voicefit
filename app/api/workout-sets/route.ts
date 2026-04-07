@@ -15,7 +15,7 @@ type RecentSet = { exerciseName: string };
 // POST /api/workout-sets - Create workout set
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const body = await request.json();
     const parseResult = createWorkoutSetSchema.safeParse(body);
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 // GET /api/workout-sets - Get recent unique exercises for quick-add
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const { searchParams } = new URL(request.url);
     const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 20);

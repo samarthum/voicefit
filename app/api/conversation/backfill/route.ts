@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import {
   getCurrentUser,
@@ -8,9 +9,9 @@ import {
 import { createConversationEvents } from "@/lib/conversation-events";
 
 // POST /api/conversation/backfill - Backfill conversation events for existing logs
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const existingEvents = await prisma.conversationEvent.findMany({
       where: { userId: user.id },

@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import {
   errorResponse,
@@ -7,9 +8,9 @@ import {
 } from "@/lib/api-helpers";
 import { revokeToken } from "@/lib/fitbit";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const connection = await prisma.fitbitConnection.findUnique({
       where: { userId: user.id },
     });

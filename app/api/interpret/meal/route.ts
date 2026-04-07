@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import {
   errorResponse,
   successResponse,
@@ -11,12 +10,7 @@ import { interpretMeal } from "@/lib/interpretation";
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return unauthorizedResponse();
-    }
-
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const body = await request.json();
     const parseResult = interpretMealRequestSchema.safeParse(body);
@@ -36,6 +30,9 @@ export async function POST(request: NextRequest) {
     return successResponse(interpretation);
   } catch (error) {
     console.error("Meal interpretation error:", error);
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return unauthorizedResponse();
+    }
     const message =
       error instanceof Error
         ? error.message

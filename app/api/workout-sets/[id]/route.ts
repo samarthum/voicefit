@@ -16,7 +16,7 @@ interface RouteParams {
 // PUT /api/workout-sets/[id] - Update workout set
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const { id } = await params;
 
     // Verify set exists and belongs to user's session
@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/workout-sets/[id] - Delete workout set
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const { id } = await params;
 
     // Verify set exists and belongs to user's session

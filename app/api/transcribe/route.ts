@@ -1,15 +1,10 @@
 import { NextRequest } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { openai } from "@/lib/openai";
-import { errorResponse, successResponse, unauthorizedResponse } from "@/lib/api-helpers";
+import { errorResponse, successResponse, unauthorizedResponse, getCurrentUser } from "@/lib/api-helpers";
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const { userId } = await auth();
-    if (!userId) {
-      return unauthorizedResponse();
-    }
+    await getCurrentUser(request);
 
     // Get form data with audio file
     const formData = await request.formData();
@@ -43,6 +38,9 @@ export async function POST(request: NextRequest) {
     return successResponse({ transcript: cleanedTranscript });
   } catch (error) {
     console.error("Transcription error:", error);
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return unauthorizedResponse();
+    }
 
     if (error instanceof Error) {
       // Handle specific OpenAI errors

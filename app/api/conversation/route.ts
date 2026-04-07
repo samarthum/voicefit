@@ -133,7 +133,7 @@ const hydrateWorkoutEvents = async <
 // GET /api/conversation - List conversation events
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const { searchParams } = new URL(request.url);
     const queryResult = listConversationQuerySchema.safeParse({
@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
 // POST /api/conversation - Create conversation event
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const body = await request.json();
     const parseResult = createConversationEventSchema.safeParse(body);

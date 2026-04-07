@@ -72,13 +72,14 @@ model MealLog {
 }
 
 model WorkoutSession {
-  id        String    @id @default(cuid())
-  userId    String
-  startedAt DateTime
-  endedAt   DateTime?
-  title     String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  userId        String
+  startedAt     DateTime
+  endedAt       DateTime?
+  title         String
+  exerciseNotes Json?     // { [exerciseName: string]: string } — per-exercise notes
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   user AppUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
   sets WorkoutSet[]

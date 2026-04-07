@@ -10,7 +10,7 @@ import { runAssistantChat } from "@/lib/assistant/orchestrator";
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) {
       return unauthorizedResponse();
     }

@@ -12,7 +12,7 @@ type RecentMeal = { id: string; description: string; calories: number; mealType:
 // GET /api/meals/recent - Get recent unique meals for quick-add
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const { searchParams } = new URL(request.url);
     const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 20);

@@ -10,7 +10,7 @@ import {
 // POST /api/workout-sessions/quick - Get or create a quick log session
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const { searchParams } = new URL(request.url);
     const timezone = searchParams.get("timezone") ?? undefined;

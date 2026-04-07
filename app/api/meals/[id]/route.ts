@@ -16,7 +16,7 @@ interface RouteParams {
 // GET /api/meals/[id] - Get single meal
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const { id } = await params;
 
     const meal = await prisma.mealLog.findFirst({
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/meals/[id] - Update meal
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const { id } = await params;
 
     // Check if meal exists and belongs to user
@@ -97,7 +97,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/meals/[id] - Delete meal
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const { id } = await params;
 
     // Check if meal exists and belongs to user

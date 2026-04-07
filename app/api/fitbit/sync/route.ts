@@ -13,7 +13,7 @@ const SYNC_COOLDOWN_MS = 60 * 1000;
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date") ?? new Date().toLocaleDateString("en-CA");
 

@@ -12,7 +12,7 @@ import { upsertDailyMetricsSchema, listQuerySchema } from "@/lib/validations";
 // GET /api/daily-metrics - List daily metrics
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const { searchParams } = new URL(request.url);
     const queryResult = listQuerySchema.safeParse({
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 // POST /api/daily-metrics - Upsert daily metrics
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const body = await request.json();
     const parseResult = upsertDailyMetricsSchema.safeParse(body);

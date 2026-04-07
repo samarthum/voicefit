@@ -9,9 +9,9 @@ import {
 import { updateUserGoalsSchema } from "@/lib/validations";
 
 // GET /api/user/settings - Get user settings/goals
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     return successResponse({
       calorieGoal: user.calorieGoal,
@@ -29,7 +29,7 @@ export async function GET() {
 // PUT /api/user/settings - Update user settings/goals
 export async function PUT(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
 
     const body = await request.json();
     const parseResult = updateUserGoalsSchema.safeParse(body);
