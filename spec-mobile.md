@@ -108,7 +108,7 @@ flowchart TB
   subgraph CONTRACTS["Repo: voicefit-contracts"]
     CONTRACTS_TYPES["src/types.ts"]
     CONTRACTS_VALIDATIONS["src/validations.ts"]
-    CONTRACTS_BUILD["dist/* + voicefit-contracts-0.0.1.tgz"]
+    CONTRACTS_BUILD["dist/* + voicefit-contracts-0.0.2.tgz"]
   end
 
   subgraph DATA["Data + Providers"]
@@ -324,9 +324,14 @@ export function useDashboardQuery() {
 
 ### 6.1 Current reality
 - Package exists locally in `/Users/samarth/Desktop/Work/voicefit-all/voicefit-contracts`.
-- Tarball exists: `/Users/samarth/Desktop/Work/voicefit-all/voicefit-contracts/voicefit-contracts-0.0.1.tgz`.
-- Web and mobile currently consume the tarball with:
-  - `"@voicefit/contracts": "file:../voicefit-contracts/voicefit-contracts-0.0.1.tgz"`
+- Source tarball: `/Users/samarth/Desktop/Work/voicefit-all/voicefit-contracts/voicefit-contracts-0.0.2.tgz`.
+- The tarball is **vendored into both consumers** so each repo is self-contained on CI:
+  - `voicefit/vendor/voicefit-contracts-0.0.2.tgz` (web — Vercel only checks out `voicefit/`, so a sibling-directory file: path doesn't resolve)
+  - `voicefit-mobile/vendor/voicefit-contracts-0.0.2.tgz` (mobile)
+- Both `package.json` files reference the local vendor copy:
+  - Web: `"@voicefit/contracts": "file:./vendor/voicefit-contracts-0.0.2.tgz"`
+  - Mobile: `"@voicefit/contracts": "file:./vendor/voicefit-contracts-0.0.2.tgz"`
+- **Bumping contracts**: bun keys `file:` tarballs by filename, so any change to `src/` requires a version bump in `voicefit-contracts/package.json`, a fresh `npm pack`, and copying the new `.tgz` into both vendor directories — otherwise consumers reuse the cached old version. Update both consumers' `package.json` and `bun install` to refresh `bun.lock`.
 - Publishing to GitHub Packages is configured but not yet operationally documented as completed.
 
 ### 6.2 Decision
