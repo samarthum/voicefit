@@ -78,6 +78,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (parseResult.data.calories !== undefined) {
       updateData.calories = parseResult.data.calories;
     }
+    if (parseResult.data.proteinG !== undefined) {
+      updateData.proteinG = parseResult.data.proteinG;
+    }
+    if (parseResult.data.carbsG !== undefined) {
+      updateData.carbsG = parseResult.data.carbsG;
+    }
+    if (parseResult.data.fatG !== undefined) {
+      updateData.fatG = parseResult.data.fatG;
+    }
 
     const meal = await prisma.mealLog.update({
       where: { id },

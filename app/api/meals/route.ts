@@ -90,7 +90,16 @@ export async function POST(request: NextRequest) {
       return errorResponse(parseResult.error.issues[0].message);
     }
 
-    const { eatenAt, mealType, description, calories, transcriptRaw } = parseResult.data;
+    const {
+      eatenAt,
+      mealType,
+      description,
+      calories,
+      proteinG,
+      carbsG,
+      fatG,
+      transcriptRaw,
+    } = parseResult.data;
 
     const meal = await prisma.mealLog.create({
       data: {
@@ -99,6 +108,9 @@ export async function POST(request: NextRequest) {
         mealType,
         description,
         calories,
+        proteinG: proteinG ?? null,
+        carbsG: carbsG ?? null,
+        fatG: fatG ?? null,
         transcriptRaw,
       },
     });

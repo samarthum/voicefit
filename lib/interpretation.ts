@@ -5,14 +5,15 @@ import { anthropic } from "@/lib/claude";
 import { EXERCISES } from "@/lib/exercises";
 import { mealInterpretationSchema, workoutSetInterpretationSchema } from "@/lib/validations";
 
-const MEAL_SYSTEM_PROMPT = `You are a nutrition expert assistant. Your task is to analyze meal descriptions and provide calorie estimates.
+const MEAL_SYSTEM_PROMPT = `You are a nutrition expert assistant. Your task is to analyze meal descriptions and provide calorie and macronutrient estimates.
 
 Given a meal description (which may be a transcript from voice input), you must:
 1. Clean up and summarize the meal description
 2. Estimate the total calories for the meal
-3. Determine the meal type (breakfast, lunch, dinner, or snack) based on context, typical meal patterns, and timestamp if provided
-4. Provide a confidence score (0-1) for your estimate
-5. List any assumptions you made
+3. Estimate macronutrients (protein, carbs, fat) in grams
+4. Determine the meal type (breakfast, lunch, dinner, or snack) based on context, typical meal patterns, and timestamp if provided
+5. Provide a confidence score (0-1) for your estimate
+6. List any assumptions you made
 
 Guidelines for calorie estimation:
 - Use standard portion sizes unless specified
@@ -20,11 +21,20 @@ Guidelines for calorie estimation:
 - Consider typical restaurant vs home-cooked portions
 - Round calories to nearest 10 for estimates under 500, nearest 50 for larger meals
 
+Guidelines for macro estimation:
+- Protein, carbs, and fat are in grams (integers, round to nearest whole gram)
+- The macros should be roughly consistent with the calorie estimate (protein and carbs ~4 kcal/g, fat ~9 kcal/g)
+- If the meal is genuinely unknowable (e.g., "some food") or you have very low confidence in macros, return null for the macro fields — do not guess wildly
+- For most everyday foods, give your best estimate
+
 You MUST respond with valid JSON matching this exact schema:
 {
   "mealType": "breakfast" | "lunch" | "dinner" | "snack",
   "description": "cleaned up meal description",
   "calories": integer (estimated total calories),
+  "proteinG": integer or null (grams of protein),
+  "carbsG": integer or null (grams of carbs),
+  "fatG": integer or null (grams of fat),
   "confidence": number between 0 and 1,
   "assumptions": ["array of assumptions made"]
 }

@@ -17,17 +17,20 @@ model AppUser {
   stepGoal    Int @default(10000)
 
   // Relations
-  dailyMetrics     DailyMetric[]
-  fitbitConnection FitbitConnection?
-  meals            MealLog[]
-  workoutSessions  WorkoutSession[]
+  dailyMetrics       DailyMetric[]
+  fitbitConnection   FitbitConnection?
+  meals              MealLog[]
+  workoutSessions    WorkoutSession[]
   conversationEvents ConversationEvent[]
+  coachProfile       CoachProfile?
+  coachMessages      CoachMessage[]
+  coachFacts         UserFact[]
 }
 
 model DailyMetric {
   id        String   @id @default(cuid())
   userId    String
-  date      String   // YYYY-MM-DD format, normalized to user timezone
+  date      String // YYYY-MM-DD format, normalized to user timezone
   steps     Int?
   weightKg  Float?
   createdAt DateTime @default(now())
@@ -40,16 +43,16 @@ model DailyMetric {
 }
 
 model FitbitConnection {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  fitbitUserId   String   @unique
-  accessToken    String
-  refreshToken   String
-  scope          String
-  expiresAt      DateTime
-  lastSyncAt     DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  fitbitUserId String    @unique
+  accessToken  String
+  refreshToken String
+  scope        String
+  expiresAt    DateTime
+  lastSyncAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -58,10 +61,13 @@ model MealLog {
   id            String   @id @default(cuid())
   userId        String
   eatenAt       DateTime
-  mealType      String   // breakfast, lunch, dinner, snack
+  mealType      String // breakfast, lunch, dinner, snack
   description   String
-  transcriptRaw String?  // Original transcript user approved
+  transcriptRaw String? // Original transcript user approved
   calories      Int
+  proteinG      Float? // Grams of protein (nullable: older meals predate macro tracking)
+  carbsG        Float? // Grams of carbs
+  fatG          Float? // Grams of fat
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -77,7 +83,7 @@ model WorkoutSession {
   startedAt     DateTime
   endedAt       DateTime?
   title         String
-  exerciseNotes Json?     // { [exerciseName: string]: string } — per-exercise notes
+  exerciseNotes Json? // { [exerciseName: string]: string } — per-exercise notes
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -94,11 +100,11 @@ model WorkoutSet {
   performedAt     DateTime
   exerciseName    String
   exerciseType    String   @default("resistance") // "resistance" or "cardio"
-  reps            Int?     // For resistance training
-  weightKg        Float?   // For resistance training
-  durationMinutes Int?     // For cardio/freeform exercises
+  reps            Int? // For resistance training
+  weightKg        Float? // For resistance training
+  durationMinutes Int? // For cardio/freeform exercises
   notes           String?
-  transcriptRaw   String?  // Original transcript user approved
+  transcriptRaw   String? // Original transcript user approved
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -124,4 +130,51 @@ model ConversationEvent {
 
   @@index([userId, createdAt])
   @@index([referenceType, referenceId])
+}
+
+// ---------------------------------------------------------------------------
+// Coach v2 — see voicefit/spec-coach-v2.md
+// ---------------------------------------------------------------------------
+
+model CoachProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  goal                String? // 'lose' | 'gain' | 'recomp' | 'maintain'
+  heightCm            Float?
+  weightKg            Float? // Current snapshot; distinct from DailyMetric weight trend
+  age                 Int?
+  biologicalSex       String? // 'male' | 'female' | 'other'
+  dietaryStyle        String? // 'omnivore' | 'vegetarian' | 'vegan' | 'pescatarian' | 'other'
+  dietaryRestrictions String? // Free text (allergies, etc.)
+  trainingExperience  String? // 'beginner' | 'intermediate' | 'advanced'
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CoachMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  role      String // 'user' | 'assistant'
+  content   String // Markdown text for assistant; plain text for user
+  toolCalls Json? // Assistant turns: [{ toolCallId, toolName, input, output }]
+  createdAt DateTime @default(now())
+
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model UserFact {
+  id        String   @id @default(cuid())
+  userId    String
+  category  String // 'goal' | 'dietary' | 'injury' | 'preference' | 'training_history' | 'other'
+  fact      String // Short natural-language statement
+  source    String   @default("coach_save_fact")
+  createdAt DateTime @default(now())
+
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, category])
 }
