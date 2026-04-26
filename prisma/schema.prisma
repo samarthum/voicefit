@@ -13,8 +13,10 @@ model AppUser {
   updatedAt   DateTime @updatedAt
 
   // Daily goals
-  calorieGoal Int @default(2000)
-  stepGoal    Int @default(10000)
+  calorieGoal  Int    @default(2000)
+  stepGoal     Int    @default(10000)
+  proteinGoal  Int    @default(140)
+  weightGoalKg Float?
 
   // Relations
   dailyMetrics       DailyMetric[]

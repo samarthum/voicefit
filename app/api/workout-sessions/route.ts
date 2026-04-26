@@ -8,7 +8,7 @@ import {
 } from "@/lib/api-helpers";
 import { createWorkoutSessionSchema, listQuerySchema } from "@/lib/validations";
 
-type SessionWithCount = {
+type SessionWithSets = {
   id: string;
   userId: string;
   title: string;
@@ -17,6 +17,7 @@ type SessionWithCount = {
   createdAt: Date;
   updatedAt: Date;
   _count: { sets: number };
+  sets: { reps: number | null; weightKg: number | null }[];
 };
 
 // GET /api/workout-sessions - List workout sessions
@@ -62,6 +63,9 @@ export async function GET(request: NextRequest) {
         _count: {
           select: { sets: true },
         },
+        sets: {
+          select: { reps: true, weightKg: true },
+        },
       },
       orderBy: { startedAt: "desc" },
       take: limit,
@@ -75,12 +79,25 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Transform to include set count
-    const sessionsWithCount = sessions.map((session: SessionWithCount) => ({
-      ...session,
-      setCount: session._count.sets,
-      _count: undefined,
-    }));
+    const sessionsWithCount = sessions.map((session: SessionWithSets) => {
+      const volume = Math.round(
+        session.sets.reduce((sum, set) => {
+          if (set.reps == null || set.weightKg == null) return sum;
+          return sum + set.reps * set.weightKg;
+        }, 0),
+      );
+      return {
+        id: session.id,
+        userId: session.userId,
+        title: session.title,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+        setCount: session._count.sets,
+        volume,
+      };
+    });
 
     return successResponse({
       sessions: sessionsWithCount,

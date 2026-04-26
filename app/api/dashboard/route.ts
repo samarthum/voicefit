@@ -11,6 +11,7 @@ import type { DashboardData } from "@/lib/types";
 
 // Types for query results
 type WeeklyMeal = { eatenAt: Date; calories: number };
+type TodayMealMacros = { calories: number; proteinG: number | null; carbsG: number | null; fatG: number | null };
 type WeeklyMetric = { date: string; steps: number | null; weightKg: number | null };
 type WeeklySession = { startedAt: Date };
 type RecentSet = { exerciseName: string };
@@ -42,6 +43,12 @@ export async function GET(request: NextRequest) {
       where: {
         userId: user.id,
         eatenAt: { gte: selectedDateStart, lte: selectedDateEnd },
+      },
+      select: {
+        calories: true,
+        proteinG: true,
+        carbsG: true,
+        fatG: true,
       },
     });
 
@@ -132,8 +139,24 @@ export async function GET(request: NextRequest) {
 
     // Calculate today's totals
     let todayCalories = 0;
-    for (const meal of todayMeals) {
+    let todayProtein = 0;
+    let todayCarbs = 0;
+    let todayFat = 0;
+    let anyMacroLogged = false;
+    for (const meal of todayMeals as TodayMealMacros[]) {
       todayCalories += meal.calories;
+      if (meal.proteinG != null) {
+        todayProtein += meal.proteinG;
+        anyMacroLogged = true;
+      }
+      if (meal.carbsG != null) {
+        todayCarbs += meal.carbsG;
+        anyMacroLogged = true;
+      }
+      if (meal.fatG != null) {
+        todayFat += meal.fatG;
+        anyMacroLogged = true;
+      }
     }
     let todaySetCount = 0;
     for (const session of todaySessions) {
@@ -182,6 +205,13 @@ export async function GET(request: NextRequest) {
           consumed: todayCalories,
           goal: user.calorieGoal,
         },
+        macros: anyMacroLogged
+          ? {
+              protein: Math.round(todayProtein),
+              carbs: Math.round(todayCarbs),
+              fat: Math.round(todayFat),
+            }
+          : null,
         steps: {
           count: todayMetric?.steps ?? null,
           goal: user.stepGoal,

@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
     return successResponse({
       calorieGoal: user.calorieGoal,
       stepGoal: user.stepGoal,
+      proteinGoal: user.proteinGoal,
+      weightGoalKg: user.weightGoalKg,
     });
   } catch (error) {
     console.error("Get user settings error:", error);
@@ -38,12 +40,18 @@ export async function PUT(request: NextRequest) {
       return errorResponse(parseResult.error.issues[0].message);
     }
 
-    const updateData: Record<string, number> = {};
+    const updateData: Record<string, number | null> = {};
     if (parseResult.data.calorieGoal !== undefined) {
       updateData.calorieGoal = parseResult.data.calorieGoal;
     }
     if (parseResult.data.stepGoal !== undefined) {
       updateData.stepGoal = parseResult.data.stepGoal;
+    }
+    if (parseResult.data.proteinGoal !== undefined) {
+      updateData.proteinGoal = parseResult.data.proteinGoal;
+    }
+    if (parseResult.data.weightGoalKg !== undefined) {
+      updateData.weightGoalKg = parseResult.data.weightGoalKg;
     }
 
     const updatedUser = await prisma.appUser.update({
@@ -54,6 +62,8 @@ export async function PUT(request: NextRequest) {
     return successResponse({
       calorieGoal: updatedUser.calorieGoal,
       stepGoal: updatedUser.stepGoal,
+      proteinGoal: updatedUser.proteinGoal,
+      weightGoalKg: updatedUser.weightGoalKg,
     });
   } catch (error) {
     console.error("Update user settings error:", error);
