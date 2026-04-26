@@ -23,7 +23,7 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tabs": "^1.1.13",
-    "@voicefit/contracts": "file:./vendor/voicefit-contracts-0.0.6.tgz",
+    "@voicefit/contracts": "file:./vendor/voicefit-contracts-0.0.7.tgz",
     "ai": "^6.0.154",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
