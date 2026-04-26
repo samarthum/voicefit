@@ -35,6 +35,25 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return notFoundResponse("Workout session");
     }
 
+    const allSets = await prisma.workoutSet.findMany({
+      where: { session: { userId: user.id }, weightKg: { not: null } },
+      select: { id: true, exerciseName: true, performedAt: true, weightKg: true },
+      orderBy: { performedAt: "asc" },
+    });
+
+    const runningMax = new Map<string, number>();
+    const prSetIds = new Set<string>();
+    for (const s of allSets) {
+      const w = s.weightKg!;
+      const prior = runningMax.get(s.exerciseName);
+      if (prior === undefined || w > prior) {
+        prSetIds.add(s.id);
+        runningMax.set(s.exerciseName, w);
+      }
+    }
+
+    const setsWithPR = session.sets.map((set) => ({ ...set, isPR: prSetIds.has(set.id) }));
+
     // Fetch all sets from the most recent prior session per exercise for the "Previous" column
     const exerciseNames = [...new Set(session.sets.map((s) => s.exerciseName))];
     const previousSets: Record<string, Array<{ weightKg: number | null; reps: number | null; durationMinutes: number | null }>> = {};
@@ -67,7 +86,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    return successResponse({ ...session, previousSets });
+    return successResponse({ ...session, sets: setsWithPR, previousSets });
   } catch (error) {
     console.error("Get workout session error:", error);
     if (error instanceof Error && error.message === "Unauthorized") {

@@ -79,6 +79,23 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    const allSets = await prisma.workoutSet.findMany({
+      where: { session: { userId: user.id }, weightKg: { not: null } },
+      select: { id: true, exerciseName: true, performedAt: true, weightKg: true, sessionId: true },
+      orderBy: { performedAt: "asc" },
+    });
+
+    const runningMax = new Map<string, number>();
+    const prCountBySession = new Map<string, number>();
+    for (const s of allSets) {
+      const w = s.weightKg!;
+      const prior = runningMax.get(s.exerciseName);
+      if (prior === undefined || w > prior) {
+        prCountBySession.set(s.sessionId, (prCountBySession.get(s.sessionId) ?? 0) + 1);
+        runningMax.set(s.exerciseName, w);
+      }
+    }
+
     const sessionsWithCount = sessions.map((session: SessionWithSets) => {
       const volume = Math.round(
         session.sets.reduce((sum, set) => {
@@ -96,6 +113,7 @@ export async function GET(request: NextRequest) {
         updatedAt: session.updatedAt,
         setCount: session._count.sets,
         volume,
+        prCount: prCountBySession.get(session.id) ?? 0,
       };
     });
 
