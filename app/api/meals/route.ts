@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
       carbsG,
       fatG,
       transcriptRaw,
+      ingredients,
     } = parseResult.data;
 
     const meal = await prisma.mealLog.create({
@@ -112,6 +113,24 @@ export async function POST(request: NextRequest) {
         carbsG: carbsG ?? null,
         fatG: fatG ?? null,
         transcriptRaw,
+        ...(ingredients !== undefined && {
+          ingredients: {
+            create: ingredients.map((ingredient, index) => ({
+              position: index,
+              name: ingredient.name,
+              grams: ingredient.grams,
+              calories: ingredient.calories,
+              proteinG: ingredient.proteinG,
+              carbsG: ingredient.carbsG,
+              fatG: ingredient.fatG,
+            })),
+          },
+        }),
+      },
+      include: {
+        ingredients: {
+          orderBy: { position: "asc" },
+        },
       },
     });
 

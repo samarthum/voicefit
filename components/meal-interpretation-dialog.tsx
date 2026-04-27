@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import type { MealInterpretation } from "@/lib/types";
 
@@ -57,7 +56,7 @@ function formatDateForDisplay(dateString?: string): string | null {
 
 export function MealInterpretationDialog(props: MealInterpretationDialogProps) {
   const resetKey = props.interpretation
-    ? `${props.interpretation.mealType}-${props.interpretation.description}-${props.interpretation.calories}-${props.interpretation.confidence}-${props.open ? "open" : "closed"}`
+    ? `${props.interpretation.mealType}-${props.interpretation.description}-${props.interpretation.calories}-${props.open ? "open" : "closed"}`
     : `meal-empty-${props.open ? "open" : "closed"}`;
 
   return <MealInterpretationDialogInner key={resetKey} {...props} />;
@@ -92,12 +91,6 @@ function MealInterpretationDialogInner({
     onOpenChange(false);
   };
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return "bg-green-500/10 text-green-500";
-    if (confidence >= 0.5) return "bg-yellow-500/10 text-yellow-500";
-    return "bg-red-500/10 text-red-500";
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -117,17 +110,6 @@ function MealInterpretationDialogInner({
             </div>
           ) : (
             <>
-              {interpretation && (
-                <div className="flex items-center gap-2 mb-4">
-                  <Badge
-                    variant="secondary"
-                    className={getConfidenceColor(interpretation.confidence)}
-                  >
-                    {Math.round(interpretation.confidence * 100)}% confident
-                  </Badge>
-                </div>
-              )}
-
               <div className="space-y-2">
                 <Label htmlFor="mealType">Meal Type</Label>
                 <Select value={mealType} onValueChange={setMealType}>
@@ -165,16 +147,6 @@ function MealInterpretationDialogInner({
                 />
               </div>
 
-              {interpretation && interpretation.assumptions.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Assumptions</Label>
-                  <ul className="text-sm text-muted-foreground list-disc list-inside">
-                    {interpretation.assumptions.map((assumption, i) => (
-                      <li key={i}>{assumption}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </>
           )}
         </div>

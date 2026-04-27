@@ -73,10 +73,29 @@ model MealLog {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        AppUser          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ingredients MealIngredient[]
 
   @@index([userId])
   @@index([userId, eatenAt])
+}
+
+model MealIngredient {
+  id        String   @id @default(cuid())
+  mealLogId String
+  position  Int // preserves the model's emitted ingredient order
+  name      String
+  grams     Float
+  calories  Int
+  proteinG  Int
+  carbsG    Int
+  fatG      Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mealLog MealLog @relation(fields: [mealLogId], references: [id], onDelete: Cascade)
+
+  @@index([mealLogId])
 }
 
 model WorkoutSession {

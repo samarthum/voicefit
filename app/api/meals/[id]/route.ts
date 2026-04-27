@@ -24,6 +24,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         id,
         userId: user.id,
       },
+      include: {
+        ingredients: {
+          orderBy: { position: "asc" },
+        },
+      },
     });
 
     if (!meal) {
@@ -88,10 +93,47 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       updateData.fatG = parseResult.data.fatG;
     }
 
-    const meal = await prisma.mealLog.update({
-      where: { id },
-      data: updateData,
-    });
+    const ingredients = parseResult.data.ingredients;
+
+    // If ingredients provided: replace the entire list atomically.
+    // If ingredients omitted: leave existing ingredient rows untouched.
+    const meal = ingredients !== undefined
+      ? await prisma.$transaction(async (tx) => {
+          await tx.mealIngredient.deleteMany({
+            where: { mealLogId: id },
+          });
+          return tx.mealLog.update({
+            where: { id },
+            data: {
+              ...updateData,
+              ingredients: {
+                create: ingredients.map((ingredient, index) => ({
+                  position: index,
+                  name: ingredient.name,
+                  grams: ingredient.grams,
+                  calories: ingredient.calories,
+                  proteinG: ingredient.proteinG,
+                  carbsG: ingredient.carbsG,
+                  fatG: ingredient.fatG,
+                })),
+              },
+            },
+            include: {
+              ingredients: {
+                orderBy: { position: "asc" },
+              },
+            },
+          });
+        })
+      : await prisma.mealLog.update({
+          where: { id },
+          data: updateData,
+          include: {
+            ingredients: {
+              orderBy: { position: "asc" },
+            },
+          },
+        });
 
     return successResponse(meal);
   } catch (error) {

@@ -260,7 +260,7 @@ export function VoiceMealLogger({ onMealSaved, selectedDate }: VoiceMealLoggerPr
       />
 
       <MealInterpretationDialog
-        key={interpretation ? `${interpretation.description}-${interpretation.confidence}` : 'empty'}
+        key={interpretation ? `${interpretation.description}` : 'empty'}
         open={state === "reviewing" || state === "interpreting" || state === "saving"}
         onOpenChange={(open) => {
           if (!open) resetAll();

@@ -959,7 +959,7 @@ export function ConversationInput({
       <MealInterpretationDialog
         key={
           mealInterpretation
-            ? `${mealInterpretation.description}-${mealInterpretation.confidence}`
+            ? `${mealInterpretation.description}`
             : "meal-empty"
         }
         open={!!mealInterpretation && (state === "reviewing" || state === "saving")}
