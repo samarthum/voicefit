@@ -157,8 +157,14 @@ function loadCorpus(): IfctRow[] {
   return rows;
 }
 
-// Loaded once at module init. The dataset is ~528 rows so this is cheap.
-const CORPUS: IfctRow[] = loadCorpus();
+// Lazy + memoized: the dataset is ~528 rows so parsing is cheap, but eager
+// load at module init crashes Next.js's "collect page data" build step,
+// which imports route modules without the CSV present on disk.
+let CORPUS: IfctRow[] | null = null;
+function getCorpus(): IfctRow[] {
+  if (CORPUS === null) CORPUS = loadCorpus();
+  return CORPUS;
+}
 
 /**
  * Score a single IFCT row against the tokenized query.
@@ -235,7 +241,7 @@ export function lookupIfct(
   if (queryLower.length === 0) return [];
 
   const scored: { row: IfctRow; score: number }[] = [];
-  for (const row of CORPUS) {
+  for (const row of getCorpus()) {
     const s = scoreRow(row, queryLower, queryTokens);
     if (s > 0) scored.push({ row, score: s });
   }
