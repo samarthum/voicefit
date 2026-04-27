@@ -5,6 +5,10 @@ import {
   unauthorizedResponse,
   getCurrentUser,
 } from "@/lib/api-helpers";
+
+// The meal branch runs the agentic interpretMeal loop (Anthropic + USDA +
+// IFCT tool calls), which routinely exceeds Vercel's default 10s ceiling.
+export const maxDuration = 60;
 import {
   interpretEntryRequestSchema,
   intentClassificationSchema,

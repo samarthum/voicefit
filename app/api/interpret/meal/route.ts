@@ -8,6 +8,10 @@ import {
 import { interpretMealRequestSchema } from "@/lib/validations";
 import { interpretMeal } from "@/lib/interpretation";
 
+// Agentic interpretMeal loop with USDA + IFCT tool calls regularly takes
+// 15-30s, which exceeds Vercel's default 10s function ceiling.
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser(request);

@@ -8,6 +8,10 @@ import {
 } from "@/lib/api-helpers";
 import { interpretIngredient } from "@/lib/interpretation";
 
+// Single-ingredient lookup also goes through the agent loop with tool
+// calls; lift the function ceiling above Vercel's 10s default.
+export const maxDuration = 60;
+
 // Request schema is local to this route — only used here.
 const interpretIngredientRequestSchema = z.object({
   name: z.string().min(1, "Ingredient name is required"),
