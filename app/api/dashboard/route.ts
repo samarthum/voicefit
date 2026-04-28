@@ -15,16 +15,44 @@ type TodayMealMacros = { calories: number; proteinG: number | null; carbsG: numb
 type WeeklyMetric = { date: string; steps: number | null; weightKg: number | null };
 type WeeklySession = { startedAt: Date };
 type RecentSet = { exerciseName: string };
+type RecentSession = { sets: RecentSet[] };
 type RecentMeal = { id: string; description: string; calories: number; mealType: string; eatenAt: Date };
+type SelectedMeal = RecentMeal & { proteinG: number | null; carbsG: number | null; fatG: number | null };
+
+function attachDashboardTiming(
+  response: ReturnType<typeof successResponse<DashboardData>>,
+  timing: { authMs: number; dbMs: number; buildMs: number; totalMs: number; scope: string }
+) {
+  response.headers.set(
+    "Server-Timing",
+    [
+      `auth;dur=${timing.authMs.toFixed(1)}`,
+      `db;dur=${timing.dbMs.toFixed(1)}`,
+      `build;dur=${timing.buildMs.toFixed(1)}`,
+      `total;dur=${timing.totalMs.toFixed(1)}`,
+    ].join(", ")
+  );
+  response.headers.set("X-VoiceFit-Dashboard-Ms", String(Math.round(timing.totalMs)));
+  response.headers.set("X-VoiceFit-Dashboard-Scope", timing.scope);
+  return response;
+}
 
 // GET /api/dashboard - Get dashboard data
 export async function GET(request: NextRequest) {
+  const routeStart = performance.now();
+  let authMs = 0;
+  let dbMs = 0;
+  let buildMs = 0;
+
   try {
+    const authStart = performance.now();
     const user = await getCurrentUser(request);
+    authMs = performance.now() - authStart;
 
     const { searchParams } = new URL(request.url);
     const timezone = searchParams.get("timezone") || "UTC";
     const dateParam = searchParams.get("date"); // Optional date parameter (YYYY-MM-DD format)
+    const scope = searchParams.get("scope") === "home" ? "home" : "full";
 
     // Get the actual current date (for weekly trends)
     const actualToday = new Date().toLocaleDateString("en-CA", { timeZone: timezone });
@@ -35,10 +63,117 @@ export async function GET(request: NextRequest) {
     const selectedDateStart = new Date(selectedDate + "T00:00:00.000Z");
     const selectedDateEnd = new Date(selectedDate + "T23:59:59.999Z");
 
+    if (scope === "home") {
+      const dbStart = performance.now();
+      const selectedMealsPromise = prisma.mealLog.findMany({
+        where: {
+          userId: user.id,
+          eatenAt: { gte: selectedDateStart, lte: selectedDateEnd },
+        },
+        orderBy: { eatenAt: "desc" },
+        select: {
+          id: true,
+          description: true,
+          calories: true,
+          mealType: true,
+          eatenAt: true,
+          proteinG: true,
+          carbsG: true,
+          fatG: true,
+        },
+      });
+
+      const todayMetricPromise = prisma.dailyMetric.findUnique({
+        where: {
+          userId_date: { userId: user.id, date: selectedDate },
+        },
+      });
+
+      const [selectedMeals, todayMetric] = await Promise.all([
+        selectedMealsPromise,
+        todayMetricPromise,
+      ]);
+      dbMs = performance.now() - dbStart;
+
+      const buildStart = performance.now();
+      let todayCalories = 0;
+      let todayProtein = 0;
+      let todayCarbs = 0;
+      let todayFat = 0;
+      let anyMacroLogged = false;
+      for (const meal of selectedMeals as SelectedMeal[]) {
+        todayCalories += meal.calories;
+        if (meal.proteinG != null) {
+          todayProtein += meal.proteinG;
+          anyMacroLogged = true;
+        }
+        if (meal.carbsG != null) {
+          todayCarbs += meal.carbsG;
+          anyMacroLogged = true;
+        }
+        if (meal.fatG != null) {
+          todayFat += meal.fatG;
+          anyMacroLogged = true;
+        }
+      }
+
+      const dashboardData: DashboardData = {
+        today: {
+          calories: {
+            consumed: todayCalories,
+            goal: user.calorieGoal,
+          },
+          macros: anyMacroLogged
+            ? {
+                protein: Math.round(todayProtein),
+                carbs: Math.round(todayCarbs),
+                fat: Math.round(todayFat),
+              }
+            : null,
+          proteinGoal: user.proteinGoal,
+          steps: {
+            count: todayMetric?.steps ?? null,
+            goal: user.stepGoal,
+          },
+          weight: todayMetric?.weightKg ?? null,
+          workoutSessions: 0,
+          workoutSets: 0,
+        },
+        weeklyTrends: [],
+        recentMeals: (selectedMeals as SelectedMeal[]).map((meal) => ({
+          id: meal.id,
+          description: meal.description,
+          calories: meal.calories,
+          mealType: meal.mealType,
+          eatenAt: meal.eatenAt.toISOString(),
+        })),
+        recentExercises: [],
+      };
+
+      buildMs = performance.now() - buildStart;
+      const totalMs = performance.now() - routeStart;
+      const response = attachDashboardTiming(successResponse(dashboardData), {
+        authMs,
+        dbMs,
+        buildMs,
+        totalMs,
+        scope,
+      });
+
+      if (totalMs > 1000) {
+        console.info(
+          `Slow dashboard request: scope=${scope} total=${Math.round(totalMs)}ms auth=${Math.round(authMs)}ms db=${Math.round(dbMs)}ms build=${Math.round(buildMs)}ms`
+        );
+      }
+
+      return response;
+    }
+
     // Get last 8 days for trends (includes today plus 7 previous days)
     const last8Days = getLastNDays(8, timezone);
 
     // Fetch all data in parallel
+    const dbStart = performance.now();
     const todayMealsPromise = prisma.mealLog.findMany({
       where: {
         userId: user.id,
@@ -110,11 +245,16 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const recentSetsPromise = prisma.workoutSet.findMany({
-      where: { session: { userId: user.id } },
-      orderBy: { performedAt: "desc" },
-      take: 50,
-      select: { exerciseName: true },
+    const recentSessionsPromise = prisma.workoutSession.findMany({
+      where: { userId: user.id },
+      orderBy: { startedAt: "desc" },
+      take: 20,
+      select: {
+        sets: {
+          orderBy: { performedAt: "desc" },
+          select: { exerciseName: true },
+        },
+      },
     });
 
     const [
@@ -125,7 +265,7 @@ export async function GET(request: NextRequest) {
       weeklyMetrics,
       weeklySessions,
       recentMeals,
-      recentSets,
+      recentSessions,
     ] = await Promise.all([
       todayMealsPromise,
       todayMetricPromise,
@@ -134,8 +274,10 @@ export async function GET(request: NextRequest) {
       weeklyMetricsPromise,
       weeklySessionsPromise,
       recentMealsPromise,
-      recentSetsPromise,
+      recentSessionsPromise,
     ]);
+    dbMs = performance.now() - dbStart;
+    const buildStart = performance.now();
 
     // Calculate today's totals
     let todayCalories = 0;
@@ -188,6 +330,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Deduplicate recent exercises
+    const recentSets = (recentSessions as RecentSession[]).flatMap((session) => session.sets);
     const seenExercises = new Set<string>();
     const recentExercises = recentSets
       .filter((set: RecentSet) => {
@@ -232,7 +375,23 @@ export async function GET(request: NextRequest) {
       recentExercises,
     };
 
-    return successResponse(dashboardData);
+    buildMs = performance.now() - buildStart;
+    const totalMs = performance.now() - routeStart;
+    const response = attachDashboardTiming(successResponse(dashboardData), {
+      authMs,
+      dbMs,
+      buildMs,
+      totalMs,
+      scope,
+    });
+
+    if (totalMs > 1000) {
+      console.info(
+        `Slow dashboard request: scope=${scope} total=${Math.round(totalMs)}ms auth=${Math.round(authMs)}ms db=${Math.round(dbMs)}ms build=${Math.round(buildMs)}ms`
+      );
+    }
+
+    return response;
   } catch (error) {
     console.error("Get dashboard error:", error);
     if (error instanceof Error && error.message === "Unauthorized") {
