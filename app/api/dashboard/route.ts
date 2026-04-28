@@ -212,6 +212,7 @@ export async function GET(request: NextRequest) {
               fat: Math.round(todayFat),
             }
           : null,
+        proteinGoal: user.proteinGoal,
         steps: {
           count: todayMetric?.steps ?? null,
           goal: user.stepGoal,
