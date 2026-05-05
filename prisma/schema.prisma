@@ -66,7 +66,8 @@ model MealLog {
   mealType      String // breakfast, lunch, dinner, snack
   description   String
   transcriptRaw String? // Original transcript user approved
-  calories      Int
+  interpretationStatus String   @default("reviewed") // interpreting, needs_review, reviewed, failed
+  calories      Int?
   proteinG      Float? // Grams of protein (nullable: older meals predate macro tracking)
   carbsG        Float? // Grams of carbs
   fatG          Float? // Grams of fat
@@ -78,6 +79,7 @@ model MealLog {
 
   @@index([userId])
   @@index([userId, eatenAt])
+  @@index([userId, interpretationStatus])
 }
 
 model MealIngredient {

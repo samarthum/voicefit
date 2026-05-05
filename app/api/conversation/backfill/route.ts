@@ -23,7 +23,13 @@ export async function POST(request: NextRequest) {
     );
 
     const [meals, workoutSets, dailyMetrics] = await Promise.all([
-      prisma.mealLog.findMany({ where: { userId: user.id } }),
+      prisma.mealLog.findMany({
+        where: {
+          userId: user.id,
+          interpretationStatus: { in: ["needs_review", "reviewed"] },
+          calories: { not: null },
+        },
+      }),
       prisma.workoutSet.findMany({
         where: { session: { userId: user.id } },
         include: {
@@ -50,7 +56,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         kind: "meal" as const,
         userText: meal.transcriptRaw?.trim() || meal.description,
-        systemText: `Logged ${meal.description} · ${meal.calories} kcal`,
+        systemText: `Logged ${meal.description} · ${meal.calories ?? 0} kcal`,
         source: "system" as const,
         referenceType: "meal",
         referenceId: meal.id,

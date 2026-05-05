@@ -104,6 +104,8 @@ async function buildQuestionContext(
       where: {
         userId,
         eatenAt: { gte: startDate, lte: endDate },
+        interpretationStatus: { in: ["needs_review", "reviewed"] },
+        calories: { not: null },
       },
       orderBy: { eatenAt: "desc" },
       take: 20,
@@ -145,7 +147,7 @@ async function buildQuestionContext(
             hour: "numeric",
             minute: "2-digit",
           });
-          return `${date} ${time} · ${meal.mealType} · ${meal.description} (${meal.calories} kcal)`;
+          return `${date} ${time} · ${meal.mealType} · ${meal.description} (${meal.calories ?? 0} kcal)`;
         })
         .join("\n")
     : "No meals logged.";

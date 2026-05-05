@@ -102,6 +102,9 @@ data would beat your own recall. Multiple tool calls per meal are expected.
   - search_previous_meals - when the user references a prior meal
     ("same as yesterday", "the usual"), or to anchor a portion size to
     one they've already accepted.
+  - The user may provide a meal photo. Use the image as primary evidence
+    for visible foods and portions, and use any text as disambiguating
+    context.
 
 If none of the tools cover an ingredient well, fall back to your own
 knowledge. Just give your best estimate.
@@ -318,6 +321,12 @@ interface InterpretMealInput {
   transcript: string;
   mealType?: string;
   eatenAt?: string;
+  image?: MealInterpretationImage;
+}
+
+export interface MealInterpretationImage {
+  mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+  base64: string;
 }
 
 const MAX_AGENT_ITERATIONS = 10;
@@ -415,6 +424,8 @@ async function executeMealTool(
           where: {
             userId: ctx.userId,
             eatenAt: { gte: since, lte: ctx.now },
+            interpretationStatus: { in: ["needs_review", "reviewed"] },
+            calories: { not: null },
             ...(mealType ? { mealType } : {}),
             ...(similarTo
               ? { description: { contains: similarTo, mode: "insensitive" as const } }
@@ -431,7 +442,7 @@ async function executeMealTool(
           description: m.description,
           mealType: m.mealType,
           eatenAt: m.eatenAt.toISOString(),
-          calories: m.calories,
+          calories: m.calories ?? 0,
           proteinG: m.proteinG ?? null,
           carbsG: m.carbsG ?? null,
           fatG: m.fatG ?? null,
@@ -498,6 +509,7 @@ export async function interpretMeal({
   transcript,
   mealType,
   eatenAt,
+  image,
 }: InterpretMealInput) {
   const timestamp = eatenAt ? new Date(eatenAt) : new Date();
   const timeStr = timestamp.toLocaleTimeString("en-US", {
@@ -512,12 +524,28 @@ export async function interpretMeal({
   });
   const contextParts: string[] = [`Time: ${dateStr} at ${timeStr}`];
   if (mealType) contextParts.push(`Meal type: ${mealType}`);
-  const userMessage = `[${contextParts.join(", ")}] ${transcript}`;
+  const userText = `[${contextParts.join(", ")}] ${transcript}`;
+  const userContent: MessageParam["content"] = image
+    ? [
+        {
+          type: "text",
+          text: userText,
+        },
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: image.mediaType,
+            data: image.base64,
+          },
+        },
+      ]
+    : userText;
 
   // Conversation accumulator. We append the assistant's content (verbatim,
   // including thinking blocks) and a tool_result user message each iteration.
   const messages: MessageParam[] = [
-    { role: "user", content: userMessage },
+    { role: "user", content: userContent },
   ];
 
   let iterations = 0;
@@ -615,7 +643,6 @@ export async function interpretMeal({
   // Surface iteration count for caller-side telemetry without changing the
   // public return shape (validation.data matches MealInterpretation).
   if (process.env.DEBUG_MEAL_INTERPRETATION === "1") {
-    // eslint-disable-next-line no-console
     console.log(`[interpretMeal] iterations=${iterations}`);
   }
 
@@ -736,7 +763,6 @@ export async function interpretIngredient({
   }
 
   if (process.env.DEBUG_MEAL_INTERPRETATION === "1") {
-    // eslint-disable-next-line no-console
     console.log(`[interpretIngredient] iterations=${iterations}`);
   }
 

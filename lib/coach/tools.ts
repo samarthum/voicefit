@@ -3,15 +3,6 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { normalizeExerciseName } from "@/lib/exercises";
 
-// All date inputs are YYYY-MM-DD strings in the user's local timezone.
-// We convert to UTC Date ranges for Prisma queries.
-function dayRange(dateStr: string): { gte: Date; lte: Date } {
-  return {
-    gte: new Date(dateStr + "T00:00:00.000Z"),
-    lte: new Date(dateStr + "T23:59:59.999Z"),
-  };
-}
-
 function dateRange(start: string, end: string): { gte: Date; lte: Date } {
   return {
     gte: new Date(start + "T00:00:00.000Z"),
@@ -62,6 +53,8 @@ export function coachTools(userId: string) {
           where: {
             userId,
             eatenAt: dateRange(start_date, end_date),
+            interpretationStatus: { in: ["needs_review", "reviewed"] },
+            calories: { not: null },
             ...(meal_type ? { mealType: meal_type } : {}),
           },
           orderBy: { eatenAt: "desc" },
@@ -79,6 +72,7 @@ export function coachTools(userId: string) {
         });
         return meals.map((m) => ({
           ...m,
+          calories: m.calories ?? 0,
           eatenAt: m.eatenAt.toISOString(),
         }));
       },
@@ -219,14 +213,24 @@ export function coachTools(userId: string) {
           switch (metric) {
             case "calories": {
               const result = await prisma.mealLog.aggregate({
-                where: { userId, eatenAt: dateRange(start, end) },
+                where: {
+                  userId,
+                  eatenAt: dateRange(start, end),
+                  interpretationStatus: { in: ["needs_review", "reviewed"] },
+                  calories: { not: null },
+                },
                 _sum: { calories: true },
               });
               return result._sum.calories ?? 0;
             }
             case "protein": {
               const result = await prisma.mealLog.aggregate({
-                where: { userId, eatenAt: dateRange(start, end) },
+                where: {
+                  userId,
+                  eatenAt: dateRange(start, end),
+                  interpretationStatus: { in: ["needs_review", "reviewed"] },
+                  calories: { not: null },
+                },
                 _sum: { proteinG: true },
               });
               return result._sum.proteinG ?? 0;
@@ -456,7 +460,12 @@ export function coachTools(userId: string) {
 
         const [meals, metrics, sessions] = await Promise.all([
           prisma.mealLog.findMany({
-            where: { userId, eatenAt: dateRange(start_date, end_date) },
+            where: {
+              userId,
+              eatenAt: dateRange(start_date, end_date),
+              interpretationStatus: { in: ["needs_review", "reviewed"] },
+              calories: { not: null },
+            },
             select: {
               eatenAt: true,
               calories: true,
@@ -517,7 +526,7 @@ export function coachTools(userId: string) {
           const key = m.eatenAt.toISOString().slice(0, 10);
           const day = dayMap.get(key);
           if (!day) continue;
-          day.calories += m.calories;
+          day.calories += m.calories ?? 0;
           if (m.proteinG != null) day.proteinG = (day.proteinG ?? 0) + m.proteinG;
           if (m.carbsG != null) day.carbsG = (day.carbsG ?? 0) + m.carbsG;
           if (m.fatG != null) day.fatG = (day.fatG ?? 0) + m.fatG;

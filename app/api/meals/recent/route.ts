@@ -7,7 +7,7 @@ import {
   unauthorizedResponse,
 } from "@/lib/api-helpers";
 
-type RecentMeal = { id: string; description: string; calories: number; mealType: string; eatenAt: Date };
+type RecentMeal = { id: string; description: string; calories: number | null; mealType: string; eatenAt: Date };
 
 // GET /api/meals/recent - Get recent unique meals for quick-add
 export async function GET(request: NextRequest) {
@@ -21,6 +21,8 @@ export async function GET(request: NextRequest) {
     const recentMeals = await prisma.mealLog.findMany({
       where: {
         userId: user.id,
+        interpretationStatus: { in: ["needs_review", "reviewed"] },
+        calories: { not: null },
       },
       orderBy: { eatenAt: "desc" },
       take: 50, // Fetch more to deduplicate

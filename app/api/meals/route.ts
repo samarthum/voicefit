@@ -7,6 +7,7 @@ import {
   unauthorizedResponse,
 } from "@/lib/api-helpers";
 import { createConversationEvent } from "@/lib/conversation-events";
+import { compareMealsPendingFirst } from "@/lib/meal-sort";
 import { createMealSchema, listQuerySchema } from "@/lib/validations";
 
 // GET /api/meals - List meals
@@ -63,8 +64,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    const sortedMeals = [...meals].sort(compareMealsPendingFirst);
+
     return successResponse({
-      meals,
+      meals: sortedMeals,
       total,
       limit,
       offset,
@@ -94,6 +97,7 @@ export async function POST(request: NextRequest) {
       eatenAt,
       mealType,
       description,
+      interpretationStatus,
       calories,
       proteinG,
       carbsG,
@@ -101,6 +105,11 @@ export async function POST(request: NextRequest) {
       transcriptRaw,
       ingredients,
     } = parseResult.data;
+    const status = interpretationStatus ?? "reviewed";
+
+    if ((status === "needs_review" || status === "reviewed") && calories == null) {
+      return errorResponse("Calories are required for reviewed meals");
+    }
 
     const meal = await prisma.mealLog.create({
       data: {
@@ -108,6 +117,7 @@ export async function POST(request: NextRequest) {
         eatenAt: new Date(eatenAt),
         mealType,
         description,
+        interpretationStatus: status,
         calories,
         proteinG: proteinG ?? null,
         carbsG: carbsG ?? null,
@@ -140,7 +150,10 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         kind: "meal",
         userText,
-        systemText: `Logged ${description} · ${calories} kcal`,
+        systemText:
+          calories == null
+            ? `Logged ${description}`
+            : `Logged ${description} · ${calories} kcal`,
         source: "text",
         referenceType: "meal",
         referenceId: meal.id,
@@ -148,6 +161,7 @@ export async function POST(request: NextRequest) {
           mealType,
           description,
           calories,
+          interpretationStatus: status,
           eatenAt: meal.eatenAt.toISOString(),
         },
       });

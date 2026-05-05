@@ -80,6 +80,8 @@ export async function getAssistantData(
       where: {
         userId,
         eatenAt: { gte: startDate, lte: endDate },
+        interpretationStatus: { in: ["needs_review", "reviewed"] },
+        calories: { not: null },
       },
       orderBy: { eatenAt: "desc" },
       select: {
@@ -122,7 +124,10 @@ export async function getAssistantData(
   ]);
 
   return {
-    meals,
+    meals: meals.map((meal) => ({
+      ...meal,
+      calories: meal.calories ?? 0,
+    })),
     metrics,
     workouts: sessions.map((session) => ({
       startedAt: session.startedAt,

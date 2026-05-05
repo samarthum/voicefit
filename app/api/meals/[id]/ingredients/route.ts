@@ -67,6 +67,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           proteinG,
           carbsG,
           fatG,
+          interpretationStatus: "reviewed",
           ingredients: {
             create: ingredients.map((ingredient, index) => ({
               position: index,

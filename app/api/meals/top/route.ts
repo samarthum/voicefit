@@ -14,7 +14,7 @@ const querySchema = z.object({
   limit: z.coerce.number().int().min(1).max(20).default(4),
 });
 
-type MealRow = { description: string; calories: number };
+type MealRow = { description: string; calories: number | null };
 
 type AggregateEntry = {
   key: string;
@@ -43,6 +43,8 @@ export async function GET(request: NextRequest) {
       where: {
         userId: user.id,
         eatenAt: { gte: since },
+        interpretationStatus: { in: ["needs_review", "reviewed"] },
+        calories: { not: null },
       },
       orderBy: { eatenAt: "desc" },
       select: { description: true, calories: true },
@@ -51,7 +53,7 @@ export async function GET(request: NextRequest) {
     const map = new Map<string, AggregateEntry>();
     for (const meal of meals) {
       const key = meal.description.trim().toLowerCase();
-      if (!key) continue;
+      if (!key || meal.calories == null) continue;
       const existing = map.get(key);
       if (existing) {
         existing.count += 1;

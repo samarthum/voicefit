@@ -7,17 +7,30 @@ import {
   unauthorizedResponse,
 } from "@/lib/api-helpers";
 import { getLastNDays } from "@/lib/timezone";
-import type { DashboardData } from "@/lib/types";
+import { compareMealsPendingFirst } from "@/lib/meal-sort";
+import type { DashboardData, MealInterpretationStatus } from "@/lib/types";
 
 // Types for query results
-type WeeklyMeal = { eatenAt: Date; calories: number };
-type TodayMealMacros = { calories: number; proteinG: number | null; carbsG: number | null; fatG: number | null };
+type WeeklyMeal = { eatenAt: Date; calories: number | null };
+type TodayMealMacros = { calories: number | null; proteinG: number | null; carbsG: number | null; fatG: number | null };
 type WeeklyMetric = { date: string; steps: number | null; weightKg: number | null };
 type WeeklySession = { startedAt: Date };
 type RecentSet = { exerciseName: string };
 type RecentSession = { sets: RecentSet[] };
-type RecentMeal = { id: string; description: string; calories: number; mealType: string; eatenAt: Date };
+type RecentMeal = {
+  id: string;
+  description: string;
+  calories: number | null;
+  mealType: string;
+  interpretationStatus: MealInterpretationStatus;
+  eatenAt: Date;
+};
 type SelectedMeal = RecentMeal & { proteinG: number | null; carbsG: number | null; fatG: number | null };
+
+const COUNTED_MEAL_WHERE = {
+  interpretationStatus: { in: ["needs_review", "reviewed"] },
+  calories: { not: null },
+};
 
 function attachDashboardTiming(
   response: ReturnType<typeof successResponse<DashboardData>>,
@@ -76,6 +89,7 @@ export async function GET(request: NextRequest) {
           description: true,
           calories: true,
           mealType: true,
+          interpretationStatus: true,
           eatenAt: true,
           proteinG: true,
           carbsG: true,
@@ -89,11 +103,15 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      const [selectedMeals, todayMetric] = await Promise.all([
+      const [selectedMealsRaw, todayMetric] = await Promise.all([
         selectedMealsPromise,
         todayMetricPromise,
       ]);
       dbMs = performance.now() - dbStart;
+
+      const selectedMeals = [...(selectedMealsRaw as SelectedMeal[])].sort(
+        compareMealsPendingFirst,
+      );
 
       const buildStart = performance.now();
       let todayCalories = 0;
@@ -101,8 +119,15 @@ export async function GET(request: NextRequest) {
       let todayCarbs = 0;
       let todayFat = 0;
       let anyMacroLogged = false;
-      for (const meal of selectedMeals as SelectedMeal[]) {
-        todayCalories += meal.calories;
+      for (const meal of selectedMeals) {
+        if (
+          (meal.interpretationStatus !== "needs_review" &&
+            meal.interpretationStatus !== "reviewed") ||
+          meal.calories == null
+        ) {
+          continue;
+        }
+        todayCalories += meal.calories ?? 0;
         if (meal.proteinG != null) {
           todayProtein += meal.proteinG;
           anyMacroLogged = true;
@@ -140,11 +165,12 @@ export async function GET(request: NextRequest) {
           workoutSets: 0,
         },
         weeklyTrends: [],
-        recentMeals: (selectedMeals as SelectedMeal[]).map((meal) => ({
+        recentMeals: selectedMeals.map((meal) => ({
           id: meal.id,
           description: meal.description,
           calories: meal.calories,
           mealType: meal.mealType,
+          interpretationStatus: meal.interpretationStatus,
           eatenAt: meal.eatenAt.toISOString(),
         })),
         recentExercises: [],
@@ -178,6 +204,7 @@ export async function GET(request: NextRequest) {
       where: {
         userId: user.id,
         eatenAt: { gte: selectedDateStart, lte: selectedDateEnd },
+        ...COUNTED_MEAL_WHERE,
       },
       select: {
         calories: true,
@@ -210,6 +237,7 @@ export async function GET(request: NextRequest) {
           gte: new Date(last8Days[0] + "T00:00:00.000Z"),
           lte: actualTodayEnd,
         },
+        ...COUNTED_MEAL_WHERE,
       },
       select: { eatenAt: true, calories: true },
     });
@@ -241,6 +269,7 @@ export async function GET(request: NextRequest) {
         description: true,
         calories: true,
         mealType: true,
+        interpretationStatus: true,
         eatenAt: true,
       },
     });
@@ -286,7 +315,7 @@ export async function GET(request: NextRequest) {
     let todayFat = 0;
     let anyMacroLogged = false;
     for (const meal of todayMeals as TodayMealMacros[]) {
-      todayCalories += meal.calories;
+      todayCalories += meal.calories ?? 0;
       if (meal.proteinG != null) {
         todayProtein += meal.proteinG;
         anyMacroLogged = true;
@@ -317,7 +346,7 @@ export async function GET(request: NextRequest) {
 
       let dayCalories = 0;
       for (const m of dayMeals) {
-        dayCalories += m.calories;
+        dayCalories += m.calories ?? 0;
       }
 
       return {
@@ -365,11 +394,12 @@ export async function GET(request: NextRequest) {
         workoutSets: todaySetCount,
       },
       weeklyTrends,
-      recentMeals: recentMeals.map((meal: RecentMeal) => ({
+      recentMeals: [...(recentMeals as RecentMeal[])].sort(compareMealsPendingFirst).map((meal) => ({
         id: meal.id,
         description: meal.description,
         calories: meal.calories,
         mealType: meal.mealType,
+        interpretationStatus: meal.interpretationStatus,
         eatenAt: meal.eatenAt.toISOString(),
       })),
       recentExercises,

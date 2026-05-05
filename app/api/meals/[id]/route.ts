@@ -80,6 +80,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (parseResult.data.description) {
       updateData.description = parseResult.data.description;
     }
+    if (parseResult.data.interpretationStatus) {
+      updateData.interpretationStatus = parseResult.data.interpretationStatus;
+    }
     if (parseResult.data.calories !== undefined) {
       updateData.calories = parseResult.data.calories;
     }
@@ -94,6 +97,23 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     const ingredients = parseResult.data.ingredients;
+    const nextStatus =
+      parseResult.data.interpretationStatus ?? existingMeal.interpretationStatus;
+    const nextCalories =
+      parseResult.data.calories !== undefined
+        ? parseResult.data.calories
+        : existingMeal.calories;
+
+    if (
+      (nextStatus === "needs_review" || nextStatus === "reviewed") &&
+      nextCalories == null
+    ) {
+      return errorResponse("Calories are required for reviewed meals");
+    }
+
+    if (ingredients !== undefined && parseResult.data.interpretationStatus === undefined) {
+      updateData.interpretationStatus = "reviewed";
+    }
 
     // If ingredients provided: replace the entire list atomically.
     // If ingredients omitted: leave existing ingredient rows untouched.
