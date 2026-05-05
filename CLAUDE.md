@@ -21,11 +21,19 @@ This is a Next.js 16 health tracking app with voice-first input for meals and wo
 - **AI Services**: OpenAI for audio transcription (`gpt-4o-mini-transcribe`), Claude Sonnet 4.5 for interpretation (`claude-sonnet-4-5-20250929`)
 
 ### Data Flow
+**Web (sync, review-before-save):**
 1. User records voice input via `MicRecordButton` component
 2. Audio sent to `/api/transcribe` (OpenAI transcription)
 3. Transcript sent to `/api/interpret/meal` or `/api/interpret/workout-set` (Claude interpretation)
 4. User confirms/edits interpretation in dialog
 5. Data saved via `/api/meals` or `/api/workout-sets`
+
+**Mobile meals (async, save-then-interpret):**
+1. User submits text/voice/photo via command center
+2. `POST /api/meals/interpret` creates a row with `interpretationStatus: "interpreting"` (calories/macros null), responds 202
+3. Backend `after()` runs `interpretMeal()` against Claude (image+text or text-only) and updates the row to `needs_review` with calories/macros/ingredients
+4. Mobile polls dashboard every 2s while any row is `interpreting` (auto-stops when none)
+5. User can tap row to review/edit; saving flips status to `reviewed`
 
 ### Key Directories
 - `app/` - Next.js App Router pages and API routes
@@ -36,7 +44,7 @@ This is a Next.js 16 health tracking app with voice-first input for meals and wo
 ### Database Models (Prisma)
 - `AppUser` - User with Clerk ID and daily goals (calories, steps)
 - `DailyMetric` - Daily steps and weight per user
-- `MealLog` - Meal entries with calories and type
+- `MealLog` - Meal entries with calories and type. `interpretationStatus` tracks async-interpret state (`interpreting | needs_review | reviewed | failed`); calories/macros are nullable while pending or failed.
 - `WorkoutSession` - Workout container with sets
 - `WorkoutSet` - Individual exercise sets with reps/weight
 
