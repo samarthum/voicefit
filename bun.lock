@@ -534,7 +534,7 @@
 
     "@vercel/oidc": ["@vercel/oidc@3.1.0", "", {}, "sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w=="],
 
-    "@voicefit/contracts": ["@voicefit/contracts@./vendor/voicefit-contracts-0.0.9.tgz", { "dependencies": { "zod": "^4.3.5" }, "peerDependencies": { "ai": "^6.0.0" } }],
+    "@voicefit/contracts": ["@voicefit/contracts@./vendor/voicefit-contracts-0.0.9.tgz", { "dependencies": { "zod": "^4.3.5" }, "peerDependencies": { "ai": "^6.0.0" } }, "sha512-q43Fa1bbqe3tx1Q82pvoBvLdW4Lc8teGbpD8aMM7ltx8RFKVeDd/fwFqpRaMnJE0YuF4yzTnuNYgkFl9Bg0VmA=="],
 
     "acorn": ["acorn@8.15.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg=="],
 
