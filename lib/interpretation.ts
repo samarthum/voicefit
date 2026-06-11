@@ -57,12 +57,8 @@
  * agent's plumbing.
  */
 
-import type {
-  ContentBlock,
-  ContentBlockParam,
-  MessageParam,
-  ToolUseBlock,
-} from "@anthropic-ai/sdk/resources/messages";
+import { generateText, tool, stepCountIs } from "ai";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { anthropic } from "@/lib/claude";
 import { EXERCISES } from "@/lib/exercises";
@@ -78,8 +74,7 @@ const MEAL_SYSTEM_PROMPT = `You are a state-of-the-art nutrition reasoning syste
 and macros of a meal from a freeform description with the rigor of a
 registered dietitian.
 
-Extended thinking is enabled. Tools are available. There is no token budget
-pressure — be thorough.
+Tools are available. Use them thoroughly — there is no token budget pressure.
 
 # APPROACH
 
@@ -161,8 +156,7 @@ Totals MUST equal the sum of per-ingredient values, rounded to integers.`;
 const INGREDIENT_SYSTEM_PROMPT = `You are estimating calories and macros for a single ingredient with the rigor
 of a registered dietitian.
 
-You have extended thinking enabled and access to tools — use them. There is
-no token-budget pressure.
+You have access to tools — use them. There is no token-budget pressure.
 
 # APPROACH
 
@@ -193,88 +187,112 @@ before or after.
 
 Round calories and macros to integers.`;
 
-// Shared nutrition-database tools used by both meal and ingredient agents.
-// Kept as a separate const so we can compose meal-specific tools on top
-// without duplicating these schemas.
-const NUTRITION_DB_TOOLS = [
-  {
-    name: "usda_search",
+const nutritionDbTools = {
+  usda_search: tool({
     description:
       "Search USDA FoodData Central for foods matching a query. Returns up to N candidate foods with FDC IDs. Strong for whole foods, common ingredients, and US branded items. Specify state (raw/cooked) in the query when known — these are separate entries.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string" as const },
-        pageSize: {
-          type: "integer" as const,
-          description: "Number of results, default 5, max 25",
-        },
-      },
-      required: ["query"],
+    inputSchema: z.object({
+      query: z.string(),
+      pageSize: z
+        .number()
+        .int()
+        .optional()
+        .describe("Number of results, default 5, max 25"),
+    }),
+    execute: async ({ query, pageSize }) => {
+      return await searchUsda(query, pageSize);
     },
-  },
-  {
-    name: "usda_get_nutrients",
+  }),
+  usda_get_nutrients: tool({
     description:
       "Fetch full nutrient profile for a USDA food by fdcId. Returns calories, protein, carbs, fat. If `grams` is provided, values are scaled to that mass; otherwise per 100g.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        fdcId: { type: "integer" as const },
-        grams: {
-          type: "number" as const,
-          description: "Optional. If provided, scales nutrient values to this gram amount.",
-        },
-      },
-      required: ["fdcId"],
+    inputSchema: z.object({
+      fdcId: z.number().int(),
+      grams: z
+        .number()
+        .optional()
+        .describe("Optional. If provided, scales nutrient values to this gram amount."),
+    }),
+    execute: async ({ fdcId, grams }) => {
+      return await getUsdaNutrients(fdcId, grams);
     },
-  },
-  {
-    name: "ifct_lookup",
+  }),
+  ifct_lookup: tool({
     description:
       "Look up ingredients in the Indian Food Composition Tables (ICMR-NIN, lab-analyzed). Use where USDA coverage is thin — most often for South Asian ingredients like paneer, ghee, atta, dal, regional produce. Returns top fuzzy matches with macros per 100g (or scaled to `grams` if provided).",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string" as const },
-        grams: { type: "number" as const },
-        limit: {
-          type: "integer" as const,
-          description: "Max results, default 5",
-        },
-      },
-      required: ["query"],
+    inputSchema: z.object({
+      query: z.string(),
+      grams: z.number().optional(),
+      limit: z.number().int().optional().describe("Max results, default 5"),
+    }),
+    execute: async ({ query, grams, limit }) => {
+      return lookupIfct(query, { grams, limit });
     },
-  },
-];
+  }),
+};
 
-const MEAL_TOOLS = [
-  ...NUTRITION_DB_TOOLS,
-  {
-    name: "search_previous_meals",
-    description:
-      "Search the user's previously-logged meals (last 14 days). Use when the user references a prior meal ('same as yesterday', 'the usual') or to anchor a portion size to one they've accepted before. Returns description, macros, and ingredient breakdown.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        similarTo: {
-          type: "string" as const,
-          description: "Fuzzy substring filter on description",
-        },
-        daysAgo: {
-          type: "integer" as const,
-          description: "Search window in days, default 14, max 30",
-        },
-        mealType: {
-          type: "string" as const,
-          enum: ["breakfast", "lunch", "dinner", "snack"],
-        },
+function makeMealTools(userId: string, now: Date) {
+  return {
+    ...nutritionDbTools,
+    search_previous_meals: tool({
+      description:
+        "Search the user's previously-logged meals (last 14 days). Use when the user references a prior meal ('same as yesterday', 'the usual') or to anchor a portion size to one they've accepted before. Returns description, macros, and ingredient breakdown.",
+      inputSchema: z.object({
+        similarTo: z
+          .string()
+          .optional()
+          .describe("Fuzzy substring filter on description"),
+        daysAgo: z
+          .number()
+          .int()
+          .optional()
+          .describe("Search window in days, default 14, max 30"),
+        mealType: z
+          .enum(["breakfast", "lunch", "dinner", "snack"])
+          .optional(),
+      }),
+      execute: async ({ similarTo, daysAgo: daysAgoRaw, mealType }) => {
+        const daysAgo = Math.min(Math.max(1, Math.floor(daysAgoRaw ?? 14)), 30);
+        const since = new Date(now);
+        since.setDate(since.getDate() - daysAgo);
+
+        const meals = await prisma.mealLog.findMany({
+          where: {
+            userId,
+            eatenAt: { gte: since, lte: now },
+            interpretationStatus: { in: ["needs_review", "reviewed"] },
+            calories: { not: null },
+            ...(mealType ? { mealType } : {}),
+            ...(similarTo
+              ? { description: { contains: similarTo, mode: "insensitive" as const } }
+              : {}),
+          },
+          orderBy: { eatenAt: "desc" },
+          take: 5,
+          include: { ingredients: { orderBy: { position: "asc" } } },
+        });
+
+        return meals.map((m) => ({
+          description: m.description,
+          mealType: m.mealType,
+          eatenAt: m.eatenAt.toISOString(),
+          calories: m.calories ?? 0,
+          proteinG: m.proteinG ?? null,
+          carbsG: m.carbsG ?? null,
+          fatG: m.fatG ?? null,
+          ingredients: m.ingredients.map((ing) => ({
+            name: ing.name,
+            grams: ing.grams,
+            calories: ing.calories,
+            proteinG: ing.proteinG,
+            carbsG: ing.carbsG,
+            fatG: ing.fatG,
+          })),
+        }));
       },
-    },
-  },
-];
-
-const INGREDIENT_TOOLS = NUTRITION_DB_TOOLS;
+    }),
+  };
+}
 
 const WORKOUT_SYSTEM_PROMPT = `You are a fitness coach assistant. Your task is to parse workout descriptions from voice input. You handle both resistance training (sets with reps and weight) and cardio/freeform exercises (duration-based activities).
 
@@ -331,142 +349,6 @@ export interface MealInterpretationImage {
 
 const MAX_AGENT_ITERATIONS = 10;
 
-interface PreviousMealResult {
-  description: string;
-  mealType: string;
-  eatenAt: string;
-  calories: number;
-  proteinG: number | null;
-  carbsG: number | null;
-  fatG: number | null;
-  ingredients: {
-    name: string;
-    grams: number;
-    calories: number;
-    proteinG: number;
-    carbsG: number;
-    fatG: number;
-  }[];
-}
-
-// Shared executor for nutrition-DB tools. Returns null if `name` isn't one
-// of the nutrition tools so callers can fall through to their own cases.
-async function executeNutritionTool(
-  name: string,
-  input: unknown,
-): Promise<{ content: string; isError: boolean } | null> {
-  try {
-    switch (name) {
-      case "usda_search": {
-        const { query, pageSize } = (input ?? {}) as {
-          query?: string;
-          pageSize?: number;
-        };
-        if (!query) throw new Error("usda_search requires `query`");
-        const result = await searchUsda(query, pageSize);
-        return { content: JSON.stringify(result), isError: false };
-      }
-      case "usda_get_nutrients": {
-        const { fdcId, grams } = (input ?? {}) as {
-          fdcId?: number;
-          grams?: number;
-        };
-        if (typeof fdcId !== "number") {
-          throw new Error("usda_get_nutrients requires `fdcId` (integer)");
-        }
-        const result = await getUsdaNutrients(fdcId, grams);
-        return { content: JSON.stringify(result), isError: false };
-      }
-      case "ifct_lookup": {
-        const { query, grams, limit } = (input ?? {}) as {
-          query?: string;
-          grams?: number;
-          limit?: number;
-        };
-        if (!query) throw new Error("ifct_lookup requires `query`");
-        const result = lookupIfct(query, { grams, limit });
-        return { content: JSON.stringify(result), isError: false };
-      }
-      default:
-        return null;
-    }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { content: JSON.stringify({ error: message }), isError: true };
-  }
-}
-
-async function executeMealTool(
-  name: string,
-  input: unknown,
-  ctx: { userId: string; now: Date },
-): Promise<{ content: string; isError: boolean }> {
-  const shared = await executeNutritionTool(name, input);
-  if (shared) return shared;
-
-  try {
-    switch (name) {
-      case "search_previous_meals": {
-        const {
-          similarTo,
-          daysAgo: daysAgoRaw,
-          mealType,
-        } = (input ?? {}) as {
-          similarTo?: string;
-          daysAgo?: number;
-          mealType?: string;
-        };
-        const daysAgo = Math.min(Math.max(1, Math.floor(daysAgoRaw ?? 14)), 30);
-        const since = new Date(ctx.now);
-        since.setDate(since.getDate() - daysAgo);
-
-        const meals = await prisma.mealLog.findMany({
-          where: {
-            userId: ctx.userId,
-            eatenAt: { gte: since, lte: ctx.now },
-            interpretationStatus: { in: ["needs_review", "reviewed"] },
-            calories: { not: null },
-            ...(mealType ? { mealType } : {}),
-            ...(similarTo
-              ? { description: { contains: similarTo, mode: "insensitive" as const } }
-              : {}),
-          },
-          orderBy: { eatenAt: "desc" },
-          take: 5,
-          include: {
-            ingredients: { orderBy: { position: "asc" } },
-          },
-        });
-
-        const shaped: PreviousMealResult[] = meals.map((m) => ({
-          description: m.description,
-          mealType: m.mealType,
-          eatenAt: m.eatenAt.toISOString(),
-          calories: m.calories ?? 0,
-          proteinG: m.proteinG ?? null,
-          carbsG: m.carbsG ?? null,
-          fatG: m.fatG ?? null,
-          ingredients: m.ingredients.map((ing) => ({
-            name: ing.name,
-            grams: ing.grams,
-            calories: ing.calories,
-            proteinG: ing.proteinG,
-            carbsG: ing.carbsG,
-            fatG: ing.fatG,
-          })),
-        }));
-
-        return { content: JSON.stringify(shaped), isError: false };
-      }
-
-      default:
-        throw new Error(`Unknown tool: ${name}`);
-    }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { content: JSON.stringify({ error: message }), isError: true };
-  }
-}
 
 function extractJson(text: string): string {
   // Strip ```json … ``` or ``` … ``` fences if present, then trim.
@@ -525,110 +407,38 @@ export async function interpretMeal({
   const contextParts: string[] = [`Time: ${dateStr} at ${timeStr}`];
   if (mealType) contextParts.push(`Meal type: ${mealType}`);
   const userText = `[${contextParts.join(", ")}] ${transcript}`;
-  const userContent: MessageParam["content"] = image
+
+  const userContent = image
     ? [
+        { type: "text" as const, text: userText },
         {
-          type: "text",
-          text: userText,
-        },
-        {
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: image.mediaType,
-            data: image.base64,
-          },
+          type: "image" as const,
+          image: `data:${image.mediaType};base64,${image.base64}`,
         },
       ]
     : userText;
 
-  // Conversation accumulator. We append the assistant's content (verbatim,
-  // including thinking blocks) and a tool_result user message each iteration.
-  const messages: MessageParam[] = [
-    { role: "user", content: userContent },
-  ];
+  const { text, steps } = await generateText({
+    model: "openai/gpt-5.5",
+    system: MEAL_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userContent }],
+    tools: makeMealTools(userId, timestamp),
+    stopWhen: stepCountIs(MAX_AGENT_ITERATIONS),
+    providerOptions: {
+      openai: { reasoningEffort: "medium" },
+    },
+  });
 
-  let iterations = 0;
-  let finalText: string | null = null;
-
-  while (iterations < MAX_AGENT_ITERATIONS) {
-    iterations++;
-
-    // Streaming: `messages.stream(...)` returns a MessageStream whose
-    // `finalMessage()` aggregator preserves thinking blocks (text + signature)
-    // intact, so we can echo the assistant's content array back verbatim on the
-    // next tool-result turn — required by the extended-thinking + tool-use
-    // protocol. We don't surface tokens to the caller right now; the endpoint
-    // still returns a single JSON. Hooking up progressive-UI rendering would
-    // mean tapping the stream's event emitters here.
-    const stream = anthropic.messages.stream({
-      model: "claude-sonnet-4-6",
-      max_tokens: 8192,
-      thinking: { type: "enabled", budget_tokens: 4096 },
-      system: MEAL_SYSTEM_PROMPT,
-      messages,
-      tools: MEAL_TOOLS,
-    });
-    const response = await stream.finalMessage();
-    const content: ContentBlock[] = response.content;
-
-    if (response.stop_reason === "end_turn" || response.stop_reason === "stop_sequence") {
-      const textBlock = content.find((b) => b.type === "text");
-      finalText = textBlock && textBlock.type === "text" ? textBlock.text : null;
-      break;
-    }
-
-    if (response.stop_reason !== "tool_use") {
-      throw new Error(
-        `Meal interpretation: unexpected stop_reason "${response.stop_reason}".`,
-      );
-    }
-
-    const toolUses = content.filter(
-      (b): b is ToolUseBlock => b.type === "tool_use",
-    );
-    if (toolUses.length === 0) {
-      throw new Error("Meal interpretation: stop_reason=tool_use but no tool_use blocks.");
-    }
-
-    // CRITICAL: pass the assistant's full content array back verbatim,
-    // INCLUDING thinking + redacted_thinking blocks. Anthropic's extended
-    // thinking + tool use protocol requires this; stripping them errors out.
-    messages.push({ role: "assistant", content });
-
-    const toolResults: ContentBlockParam[] = [];
-    for (const tu of toolUses) {
-      const { content: resultText, isError } = await executeMealTool(
-        tu.name,
-        tu.input,
-        { userId, now: timestamp },
-      );
-      toolResults.push({
-        type: "tool_result",
-        tool_use_id: tu.id,
-        content: resultText,
-        is_error: isError,
-      });
-    }
-    messages.push({ role: "user", content: toolResults });
-  }
-
-  if (iterations >= MAX_AGENT_ITERATIONS && finalText === null) {
-    throw new Error(
-      `Meal interpretation: agent loop exceeded ${MAX_AGENT_ITERATIONS} iterations without producing a final answer.`,
-    );
-  }
-
-  if (!finalText) {
-    throw new Error("Meal interpretation: model returned no text block.");
+  if (!text) {
+    throw new Error("Meal interpretation: model returned no text.");
   }
 
   let interpretation: unknown;
   try {
-    interpretation = JSON.parse(extractJson(finalText));
+    interpretation = JSON.parse(extractJson(text));
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
-    throw new Error(`Meal interpretation: failed to parse JSON (${detail}). Raw: ${finalText.slice(0, 500)}`);
+    throw new Error(`Meal interpretation: failed to parse JSON (${detail}). Raw: ${text.slice(0, 500)}`);
   }
 
   const rounded = roundIntegerMacros(interpretation);
@@ -640,10 +450,8 @@ export async function interpretMeal({
     );
   }
 
-  // Surface iteration count for caller-side telemetry without changing the
-  // public return shape (validation.data matches MealInterpretation).
   if (process.env.DEBUG_MEAL_INTERPRETATION === "1") {
-    console.log(`[interpretMeal] iterations=${iterations}`);
+    console.log(`[interpretMeal] steps=${steps.length}`);
   }
 
   return validation.data;
@@ -654,12 +462,6 @@ interface InterpretIngredientInput {
   grams?: number;
 }
 
-/**
- * Single-ingredient agent — narrower scope than `interpretMeal`. Used by the
- * mobile review sheet when a user renames a row or adds a new ingredient
- * mid-edit. Same tool plumbing (USDA + IFCT, agentic loop, extended
- * thinking) but no `search_previous_meals` and a smaller thinking budget.
- */
 export async function interpretIngredient({
   name,
   grams,
@@ -669,90 +471,31 @@ export async function interpretIngredient({
       ? `Ingredient: ${name}\nAmount: ${grams} g`
       : `Ingredient: ${name}\nAmount: (not specified — pick a realistic serving)`;
 
-  const messages: MessageParam[] = [{ role: "user", content: userMessage }];
+  const { text, steps } = await generateText({
+    model: "openai/gpt-5.5",
+    system: INGREDIENT_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userMessage }],
+    tools: nutritionDbTools,
+    stopWhen: stepCountIs(MAX_AGENT_ITERATIONS),
+    providerOptions: {
+      openai: { reasoningEffort: "medium" },
+    },
+  });
 
-  let iterations = 0;
-  let finalText: string | null = null;
-
-  while (iterations < MAX_AGENT_ITERATIONS) {
-    iterations++;
-
-    const stream = anthropic.messages.stream({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
-      thinking: { type: "enabled", budget_tokens: 2048 },
-      system: INGREDIENT_SYSTEM_PROMPT,
-      messages,
-      tools: INGREDIENT_TOOLS,
-    });
-    const response = await stream.finalMessage();
-    const content: ContentBlock[] = response.content;
-
-    if (response.stop_reason === "end_turn" || response.stop_reason === "stop_sequence") {
-      const textBlock = content.find((b) => b.type === "text");
-      finalText = textBlock && textBlock.type === "text" ? textBlock.text : null;
-      break;
-    }
-
-    if (response.stop_reason !== "tool_use") {
-      throw new Error(
-        `Ingredient interpretation: unexpected stop_reason "${response.stop_reason}".`,
-      );
-    }
-
-    const toolUses = content.filter(
-      (b): b is ToolUseBlock => b.type === "tool_use",
-    );
-    if (toolUses.length === 0) {
-      throw new Error(
-        "Ingredient interpretation: stop_reason=tool_use but no tool_use blocks.",
-      );
-    }
-
-    // Echo assistant content (incl. thinking + signatures) verbatim — required
-    // by extended-thinking + tool-use protocol.
-    messages.push({ role: "assistant", content });
-
-    const toolResults: ContentBlockParam[] = [];
-    for (const tu of toolUses) {
-      const result = await executeNutritionTool(tu.name, tu.input);
-      const { content: resultText, isError } = result ?? {
-        content: JSON.stringify({ error: `Unknown tool: ${tu.name}` }),
-        isError: true,
-      };
-      toolResults.push({
-        type: "tool_result",
-        tool_use_id: tu.id,
-        content: resultText,
-        is_error: isError,
-      });
-    }
-    messages.push({ role: "user", content: toolResults });
-  }
-
-  if (iterations >= MAX_AGENT_ITERATIONS && finalText === null) {
-    throw new Error(
-      `Ingredient interpretation: agent loop exceeded ${MAX_AGENT_ITERATIONS} iterations without producing a final answer.`,
-    );
-  }
-
-  if (!finalText) {
-    throw new Error("Ingredient interpretation: model returned no text block.");
+  if (!text) {
+    throw new Error("Ingredient interpretation: model returned no text.");
   }
 
   let interpretation: unknown;
   try {
-    interpretation = JSON.parse(extractJson(finalText));
+    interpretation = JSON.parse(extractJson(text));
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     throw new Error(
-      `Ingredient interpretation: failed to parse JSON (${detail}). Raw: ${finalText.slice(0, 500)}`,
+      `Ingredient interpretation: failed to parse JSON (${detail}). Raw: ${text.slice(0, 500)}`,
     );
   }
 
-  // Round macros to integers (the model is asked for integers but routinely
-  // emits floats). Reuse the same in-place helper as the meal path — for a
-  // single object the `ingredients` branch is a no-op.
   const rounded = roundIntegerMacros(interpretation);
 
   const validation = mealIngredientSchema.safeParse(rounded);
@@ -763,7 +506,7 @@ export async function interpretIngredient({
   }
 
   if (process.env.DEBUG_MEAL_INTERPRETATION === "1") {
-    console.log(`[interpretIngredient] iterations=${iterations}`);
+    console.log(`[interpretIngredient] steps=${steps.length}`);
   }
 
   return validation.data;
