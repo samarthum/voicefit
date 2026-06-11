@@ -54,14 +54,14 @@ export async function POST(request: NextRequest) {
   });
 
   const result = streamText({
-    model: "anthropic/claude-sonnet-4.6",
+    model: "openai/gpt-5.5",
     system,
     messages: await convertToModelMessages(windowed),
     tools: coachTools(user.id),
     stopWhen: stepCountIs(8),
     providerOptions: {
-      anthropic: {
-        thinking: { type: "enabled" as const, budgetTokens: 12000 },
+      openai: {
+        reasoningEffort: "medium",
       },
     },
     prepareStep: async ({ stepNumber }) => {
