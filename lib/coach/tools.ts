@@ -1,4 +1,5 @@
 import { tool } from "ai";
+import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { normalizeExerciseName } from "@/lib/exercises";
@@ -592,6 +593,14 @@ export function coachTools(userId: string) {
         return { ok: true, factId: created.id };
       },
     }),
+
+    // -----------------------------------------------------------------------
+    // 5.4 Web
+    // -----------------------------------------------------------------------
+
+    // OpenAI native web search (provider-executed). For general fitness /
+    // nutrition knowledge and current facts outside the user's logged data.
+    web_search: openai.tools.webSearch({ searchContextSize: "medium" }),
   };
 }
 

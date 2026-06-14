@@ -58,6 +58,7 @@
  */
 
 import { generateText, tool, stepCountIs } from "ai";
+import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { anthropic } from "@/lib/claude";
@@ -97,6 +98,10 @@ data would beat your own recall. Multiple tool calls per meal are expected.
   - search_previous_meals - when the user references a prior meal
     ("same as yesterday", "the usual"), or to anchor a portion size to
     one they've already accepted.
+  - web_search - live web lookup. Use for restaurant menu items,
+    packaged/branded products, and chain-specific dishes whose nutrition
+    isn't in USDA/IFCT. Search the brand's or restaurant's published
+    nutrition figures and prefer official/manufacturer sources over blogs.
   - The user may provide a meal photo. Use the image as primary evidence
     for visible foods and portions, and use any text as disambiguating
     context.
@@ -165,8 +170,10 @@ You have access to tools — use them. There is no token-budget pressure.
   of bread ~30 g, 1 cup cooked rice ~160 g) and report grams in your output.
 - Look up authoritative nutrition data for the ingredient. Use ifct_lookup
   for South Asian items (paneer, ghee, atta, dal, regional produce);
-  usda_search + usda_get_nutrients for everything else. Fall back to your
-  own knowledge only if the tools have no good match.
+  usda_search + usda_get_nutrients for everything else. For branded or
+  restaurant items not in those databases, use web_search to find the
+  brand's published figures (prefer official/manufacturer sources). Fall
+  back to your own knowledge only if no tool has a good match.
 - Cooked-vs-raw matters: pick the DB entry that matches the state implied
   by the ingredient name; never apply a yield factor on top of an entry
   that already represents that state.
@@ -229,6 +236,10 @@ const nutritionDbTools = {
       return lookupIfct(query, { grams, limit });
     },
   }),
+  // OpenAI native web search (provider-executed). Use for branded/restaurant
+  // items whose nutrition isn't in USDA/IFCT — the model searches the brand's
+  // published figures rather than guessing.
+  web_search: openai.tools.webSearch({ searchContextSize: "medium" }),
 };
 
 function makeMealTools(userId: string, now: Date) {
